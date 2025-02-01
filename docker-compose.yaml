@@ -1,0 +1,5 @@
+services:
+  bot:
+    image: godrop:latest
+    volumes:
+      - ./data:/data

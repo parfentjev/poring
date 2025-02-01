@@ -1,0 +1,5 @@
+server:
+  address: irc.server.address:6679
+  tls: true
+  nickname: mybot
+  channels: ["#channel1", "channel2"]
