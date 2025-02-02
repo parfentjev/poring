@@ -44,7 +44,7 @@ func (g *GoDrop) Run() {
 		send(fmt.Sprintf("PONG :%v", args.Text))
 	})
 
-	g.listen(g.conn)
+	g.listen()
 }
 
 func (g *GoDrop) Handle(command string, handler IRCMessageHandler) {
@@ -72,8 +72,8 @@ func connectTls(address string) (net.Conn, error) {
 	return conn, nil
 }
 
-func (g *GoDrop) listen(conn net.Conn) {
-	scanner := bufio.NewScanner(conn)
+func (g *GoDrop) listen() {
+	scanner := bufio.NewScanner(g.conn)
 
 	for scanner.Scan() {
 		input := strings.TrimRight(scanner.Text(), "\r\n")

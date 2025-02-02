@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
 	"codeberg.org/parfentjev/godrop/internal/godrop"
+	"codeberg.org/parfentjev/godrop/internal/handler"
 )
 
 func main() {
@@ -13,10 +11,9 @@ func main() {
 		panic(err)
 	}
 
-	g.Handle("PRIVMSG", func(send godrop.Sender, args godrop.IRCMessage) {
-		if args.Params[0] == "#prontera_field" && strings.HasPrefix(args.Text, "!say") {
-			send(fmt.Sprintf("PRIVMSG %s :%s", args.Params[0], args.Text[strings.Index(args.Text, " ")+1:]))
-		}
+	// todo: there should be a better way to do this than manual registration
+	g.Handle("PRIVMSG", func(send godrop.Sender, message godrop.IRCMessage) {
+		handler.HandleCeeks(send, message)
 	})
 
 	g.Run()
