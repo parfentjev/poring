@@ -3,13 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"codeberg.org/parfentjev/godrop/internal/godrop"
 )
 
-type nextSession struct {
+type session struct {
 	Summary   string `json:"summary"`
 	Location  string `json:"location"`
 	StartTime string `json:"startTime"`
@@ -22,38 +23,41 @@ func HandleCeeks(send godrop.Sender, message godrop.IRCMessage) {
 		return
 	}
 
-	data, err := fetchNextSession()
+	session, err := fetchNextSession()
 	if err != nil {
+		log.Printf("failed to fetch next session; %v", err)
 		return
 	}
 
-	ceeks, err := calculateCeeks(data)
+	ceeks, err := calculateCeeks(session)
 	if err != nil {
+		log.Printf("failed to calculate ceeks; %v", err)
 		return
 	}
 
 	// todo: message.Params[0] == bot in case of private messages, need to address that
-	send(fmt.Sprintf("PRIVMSG %s :%s begins in %.2f ceeks", message.Params[0], data.Summary, ceeks))
+	// https://todo.fpt.local/tasks/6
+	send(fmt.Sprintf("PRIVMSG %s :%s begins in %.2f ceeks", message.Params[0], session.Summary, ceeks))
 }
 
-func fetchNextSession() (nextSession, error) {
-	var data nextSession
+func fetchNextSession() (session, error) {
+	var session session
 
 	resp, err := http.Get("https://raweceek.eu/api/sessions/next")
 	if err != nil || resp.StatusCode != http.StatusOK {
-		return data, err
+		return session, err
 	}
 
 	defer resp.Body.Close()
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return data, err
+	if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
+		return session, err
 	}
 
-	return data, nil
+	return session, nil
 }
 
-func calculateCeeks(data nextSession) (float64, error) {
-	startTime, err := time.Parse("2006-01-02T15:04Z", data.StartTime)
+func calculateCeeks(session session) (float64, error) {
+	startTime, err := time.Parse("2006-01-02T15:04Z", session.StartTime)
 	if err != nil {
 		return 0, err
 	}
