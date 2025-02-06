@@ -12,13 +12,23 @@ import (
 	"codeberg.org/parfentjev/godrop/internal/config"
 )
 
-func New() (GoDrop, error) {
+type GoDrop struct {
+	config   *config.Config
+	handlers map[string][]IRCMessageHandler
+	conn     net.Conn
+}
+
+type IRCMessageHandler func(send Sender, message *IRCMessage)
+
+type Sender func(text string)
+
+func New() (*GoDrop, error) {
 	config, err := config.New("./data/godrop.yaml")
 	if err != nil {
-		return GoDrop{}, err
+		return &GoDrop{}, err
 	}
 
-	return GoDrop{config: config, handlers: make(map[string][]IRCMessageHandler)}, nil
+	return &GoDrop{config: config, handlers: make(map[string][]IRCMessageHandler)}, nil
 }
 
 func (g *GoDrop) Run() {
@@ -40,11 +50,13 @@ func (g *GoDrop) Run() {
 		fmt.Fprintf(g.conn, "JOIN %s\n", channel)
 	}
 
-	g.Handle("PING", func(send Sender, args IRCMessage) {
+	g.Handle("PING", func(send Sender, args *IRCMessage) {
 		send(fmt.Sprintf("PONG :%v", args.Text))
 	})
 
 	g.listen()
+	// theoretically
+	log.Println("disconnected, eh?")
 }
 
 func (g *GoDrop) Handle(command string, handler IRCMessageHandler) {

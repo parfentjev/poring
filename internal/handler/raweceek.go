@@ -16,10 +16,10 @@ type session struct {
 	StartTime string `json:"startTime"`
 }
 
-const WEEK_SECONDS float64 = 604800
+const WEEK_SECONDS float64 = 604_800
 
-func HandleCeeks(send godrop.Sender, message godrop.IRCMessage) {
-	if message.Text != "!ceeks" {
+func handleCeeks(send godrop.Sender, message *godrop.IRCMessage) {
+	if !message.IsChannel() || !message.Text.IsCommand("!ceek") {
 		return
 	}
 
@@ -35,9 +35,8 @@ func HandleCeeks(send godrop.Sender, message godrop.IRCMessage) {
 		return
 	}
 
-	// todo: message.Params[0] == bot in case of private messages, need to address that
-	// https://todo.fpt.local/tasks/6
-	send(fmt.Sprintf("PRIVMSG %s :%s begins in %.2f ceeks", message.Params[0], session.Summary, ceeks))
+	response := fmt.Sprintf("%s begins in %.2f ceeks", session.Summary, ceeks)
+	send(fmt.Sprintf("PRIVMSG %s :%s 🎉", message.Params[0], prism(response)))
 }
 
 func fetchNextSession() (session, error) {

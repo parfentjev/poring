@@ -6,16 +6,11 @@ import (
 )
 
 func main() {
-	g, err := godrop.New()
+	godrop, err := godrop.New()
 	if err != nil {
 		panic(err)
 	}
 
-	// todo: there should be a better way to do this than manual registration
-	// https://todo.fpt.local/tasks/5
-	g.Handle("PRIVMSG", func(send godrop.Sender, message godrop.IRCMessage) {
-		handler.HandleCeeks(send, message)
-	})
-
-	g.Run()
+	handler.RegisterHandlers(godrop)
+	godrop.Run()
 }

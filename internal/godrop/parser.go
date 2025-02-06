@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-func parseInput(input string) IRCMessage {
+func parseInput(input string) *IRCMessage {
 	var (
 		message []string = strings.Split(strings.TrimSpace(input), " ")
 		prefix  string
@@ -28,12 +28,7 @@ func parseInput(input string) IRCMessage {
 		params = append(params, token)
 	}
 
-	return IRCMessage{
-		Prefix:  prefix,
-		Command: command,
-		Params:  params,
-		Text:    text,
-	}
+	return NewIRCMessage(prefix, command, params, text)
 }
 
 func extractPrefix(message *[]string) string {
