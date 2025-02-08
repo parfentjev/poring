@@ -17,9 +17,34 @@ type session struct {
 }
 
 const WEEK_SECONDS float64 = 604_800
+const SUPER_MAX_SECONDS float64 = 225
+const DOG_YEAR_SECONDS float64 = 4_505_142
+const BLINK_SECONDS float64 = 0.3
 
-func handleCeeks(send godrop.Sender, message *godrop.IRCMessage) {
-	if !message.IsChannel() || !message.Text.IsCommand("!ceek") {
+func handleNextSesson(send godrop.Sender, message *godrop.IRCMessage) {
+	if !message.IsChannel() {
+		return
+	}
+
+	var (
+		unitSeconds      float64
+		responseTemplate string
+	)
+
+	switch message.Text.Command() {
+	case "!ceeks":
+		unitSeconds = WEEK_SECONDS
+		responseTemplate = "%s begins in %.2f ceeks"
+	case "!supermax":
+		unitSeconds = SUPER_MAX_SECONDS
+		responseTemplate = "%s begins in %.2f super max songs"
+	case "!dogs":
+		unitSeconds = DOG_YEAR_SECONDS
+		responseTemplate = "%s begins in %.2f dog years"
+	case "!blinks":
+		unitSeconds = BLINK_SECONDS
+		responseTemplate = "%s begins in %e eye blinks"
+	default:
 		return
 	}
 
@@ -29,13 +54,13 @@ func handleCeeks(send godrop.Sender, message *godrop.IRCMessage) {
 		return
 	}
 
-	ceeks, err := calculateCeeks(session)
+	units, err := calculateUnits(session, unitSeconds)
 	if err != nil {
-		log.Printf("failed to calculate ceeks; %v", err)
+		log.Printf("failed to calculate units; %v", err)
 		return
 	}
 
-	response := fmt.Sprintf("%s begins in %.2f ceeks", session.Summary, ceeks)
+	response := fmt.Sprintf(responseTemplate, session.Summary, units)
 	send(fmt.Sprintf("PRIVMSG %s :%s 🎉", message.Params[0], prism(response)))
 }
 
@@ -55,11 +80,11 @@ func fetchNextSession() (session, error) {
 	return session, nil
 }
 
-func calculateCeeks(session session) (float64, error) {
+func calculateUnits(session session, n float64) (float64, error) {
 	startTime, err := time.Parse("2006-01-02T15:04Z", session.StartTime)
 	if err != nil {
 		return 0, err
 	}
 
-	return (float64(startTime.Unix()) - float64(time.Now().Unix())) / WEEK_SECONDS, nil
+	return (float64(startTime.Unix()) - float64(time.Now().Unix())) / n, nil
 }

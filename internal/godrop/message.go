@@ -26,5 +26,15 @@ func (m *IRCMessage) IsChannel() bool {
 }
 
 func (t *IRCText) IsCommand(command string) bool {
-	return strings.HasPrefix(t.Value, command)
+	return strings.EqualFold(t.Command(), command)
+}
+
+func (t *IRCText) Command() string {
+	i := strings.Index(t.Value, " ")
+
+	if i == -1 {
+		return t.Value
+	}
+
+	return t.Value[:i]
 }

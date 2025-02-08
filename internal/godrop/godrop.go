@@ -51,7 +51,7 @@ func (g *GoDrop) Run() {
 	}
 
 	g.Handle("PING", func(send Sender, args *IRCMessage) {
-		send(fmt.Sprintf("PONG :%v", args.Text))
+		send(fmt.Sprintf("PONG :%v", args.Text.Value))
 	})
 
 	g.listen()
