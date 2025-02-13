@@ -7,21 +7,20 @@ import (
 	"unicode"
 )
 
-func prism(s string) string {
+func prism(text string) string {
 	var (
-		chars  = []rune(s)
-		output []string
-		color  = rand.Intn(15)
+		output strings.Builder
+		color  = rand.Intn(16)
 	)
 
-	for i := range len(chars) {
-		if unicode.IsSpace(chars[i]) {
-			output = append(output, fmt.Sprintf("%c", chars[i]))
-		} else {
-			output = append(output, fmt.Sprintf("\x03%.2d%c", color%16, chars[i]))
+	for _, char := range text {
+		if !unicode.IsSpace(char) {
+			fmt.Fprintf(&output, "\x03%.2d", color%16)
 			color++
 		}
+
+		output.WriteRune(char)
 	}
 
-	return strings.Join(output, "")
+	return output.String()
 }
