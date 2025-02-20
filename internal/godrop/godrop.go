@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 
 	"codeberg.org/parfentjev/godrop/internal/config"
 )
@@ -34,40 +35,34 @@ func New() (*GoDrop, error) {
 func (g *GoDrop) Run() {
 	var err error
 
-	if g.config.Server.Tls {
-		g.conn, err = connectTls(g.config.Server.Address)
-	} else {
-		g.conn, err = connect(g.config.Server.Address)
+	for {
+		g.conn, err = connect(g.config.Server.Address, g.config.Server.Tls)
+
+		if err != nil {
+			log.Println("failed to connect to the server", err)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
+		fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
+		for _, channel := range g.config.Server.Channels {
+			fmt.Fprintf(g.conn, "JOIN %s\n", channel)
+		}
+
+		g.listen()
 	}
-
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
-	fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
-	for _, channel := range g.config.Server.Channels {
-		fmt.Fprintf(g.conn, "JOIN %s\n", channel)
-	}
-
-	g.Handle("PING", func(send Sender, args *IRCMessage) {
-		send(fmt.Sprintf("PONG :%v", args.Text.Value))
-	})
-
-	g.listen()
-	// theoretically
-	log.Println("disconnected, eh?")
 }
 
 func (g *GoDrop) Handle(command string, handler IRCMessageHandler) {
 	g.handlers[command] = append(g.handlers[command], handler)
 }
 
-func connect(address string) (net.Conn, error) {
-	return net.Dial("tcp", address)
-}
+func connect(address string, useTls bool) (net.Conn, error) {
+	if !useTls {
+		return net.Dial("tcp", address)
+	}
 
-func connectTls(address string) (net.Conn, error) {
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, err
