@@ -15,13 +15,18 @@ import (
 
 type GoDrop struct {
 	config   *config.Config
-	handlers map[string][]IRCMessageHandler
+	handlers map[string][]EventHandler
 	conn     net.Conn
 }
 
-type IRCMessageHandler func(send Sender, message *IRCMessage)
+type EventContext struct {
+	Send    func(s string)
+	Sendf   func(s string, a ...any)
+	Message *IRCMessage
+	Config  *config.Config
+}
 
-type Sender func(text string)
+type EventHandler func(e *EventContext)
 
 func New() (*GoDrop, error) {
 	config, err := config.New("./data/godrop.yaml")
@@ -29,7 +34,7 @@ func New() (*GoDrop, error) {
 		return &GoDrop{}, err
 	}
 
-	return &GoDrop{config: config, handlers: make(map[string][]IRCMessageHandler)}, nil
+	return &GoDrop{config: config, handlers: make(map[string][]EventHandler)}, nil
 }
 
 func (g *GoDrop) Run() {
@@ -44,17 +49,12 @@ func (g *GoDrop) Run() {
 			continue
 		}
 
-		fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
-		fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
-		for _, channel := range g.config.Server.Channels {
-			fmt.Fprintf(g.conn, "JOIN %s\n", channel)
-		}
-
+		g.onConnect()
 		g.listen()
 	}
 }
 
-func (g *GoDrop) Handle(command string, handler IRCMessageHandler) {
+func (g *GoDrop) Handle(command string, handler EventHandler) {
 	g.handlers[command] = append(g.handlers[command], handler)
 }
 
@@ -84,18 +84,34 @@ func (g *GoDrop) listen() {
 
 	for scanner.Scan() {
 		input := strings.TrimRight(scanner.Text(), "\r\n")
-		log.Printf("=> %s\n", input)
+		log.Printf("%s\n", input)
 
 		message := parseInput(input)
 		for _, handler := range g.handlers[message.Command] {
-			handler(func(text string) {
-				g.send(text)
-			}, message)
+			handler(&EventContext{Send: g.send, Sendf: g.sendf, Message: message, Config: g.config})
 		}
 	}
 }
 
-func (g *GoDrop) send(input string) {
-	log.Printf("<= %s", input)
-	fmt.Fprintf(g.conn, "%s\n", input)
+func (g *GoDrop) send(s string) {
+	fmt.Fprint(g.conn, s)
+	fmt.Fprint(g.conn, "\n")
+}
+
+func (g *GoDrop) sendf(s string, a ...any) {
+	fmt.Fprintf(g.conn, s, a...)
+	fmt.Fprint(g.conn, "\n")
+}
+
+func (g *GoDrop) onConnect() {
+	fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
+	fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
+
+	if g.config.Sasl.Enabled {
+		authenticate(g)
+	}
+
+	for _, channel := range g.config.Server.Channels {
+		fmt.Fprintf(g.conn, "JOIN %s\n", channel)
+	}
 }

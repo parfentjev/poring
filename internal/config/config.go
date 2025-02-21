@@ -7,14 +7,21 @@ import (
 )
 
 type Config struct {
-	Server ServerConfig `yaml:"server"`
+	Server Server `yaml:"server"`
+	Sasl   Sasl   `yaml:"sasl"`
 }
 
-type ServerConfig struct {
+type Server struct {
 	Address  string   `yaml:"address"`
 	Tls      bool     `yaml:"tls"`
 	Nickname string   `yaml:"nickname"`
 	Channels []string `yaml:"channels"`
+}
+
+type Sasl struct {
+	Enabled  bool   `yaml:"enabled"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 func New(file string) (*Config, error) {
