@@ -25,23 +25,20 @@ type countdown struct {
 	Unit  string  `json:"unit"`
 }
 
-func handleNextSesson(e *godrop.EventContext) {
+var commandToCountdownUnitMap = map[string]string{
+	"!ceeks":    "ceeks",
+	"!supermax": "super maxes",
+	"!dogs":     "dog years",
+	"!blinks":   "eye blinks",
+}
+
+func handleNextSessionCountdown(e *godrop.EventContext) {
 	if !e.Message.IsChannel() {
 		return
 	}
 
-	var key string
-
-	switch e.Message.Text.Command() {
-	case "!ceeks":
-		key = "ceeks"
-	case "!supermax":
-		key = "super maxes"
-	case "!dogs":
-		key = "dog years"
-	case "!blinks":
-		key = "eye blinks"
-	default:
+	key, exists := commandToCountdownUnitMap[e.Message.Text.Command()]
+	if !exists {
 		return
 	}
 
@@ -55,7 +52,7 @@ func handleNextSesson(e *godrop.EventContext) {
 		if countdown.Unit == key {
 			response := fmt.Sprintf("%s begins in %.2f %s", data.Session.Summary, countdown.Value, countdown.Unit)
 			e.Sendf("PRIVMSG %s :%s 🎉", e.Message.Params[0], prism(response))
-			break
+			return
 		}
 	}
 }
