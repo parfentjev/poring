@@ -12,6 +12,7 @@ import (
 type countdownResponse struct {
 	Session    session     `json:"session"`
 	Countdowns []countdown `json:"countdowns"`
+	IsRaceWeek bool        `json:"isRaceWeek"`
 }
 
 type session struct {
@@ -51,7 +52,12 @@ func handleNextSessionCountdown(e *godrop.EventContext) {
 	for _, countdown := range data.Countdowns {
 		if countdown.Unit == key {
 			response := fmt.Sprintf("%s begins in %.2f %s", data.Session.Summary, countdown.Value, countdown.Unit)
-			e.Sendf("PRIVMSG %s :%s 🎉", e.Message.Params[0], prism(response))
+
+			if data.IsRaceWeek {
+				response = prism(response)
+			}
+
+			e.Sendf("PRIVMSG %s :%s 🎉", e.Message.Params[0], response)
 			return
 		}
 	}
