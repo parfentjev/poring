@@ -104,12 +104,12 @@ func (g *GoDrop) sendf(s string, a ...any) {
 }
 
 func (g *GoDrop) onConnect() {
-	fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
-	fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
-
 	if g.config.Sasl.Enabled {
 		authenticate(g)
 	}
+
+	fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
+	fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
 
 	for _, channel := range g.config.Server.Channels {
 		fmt.Fprintf(g.conn, "JOIN %s\n", channel)

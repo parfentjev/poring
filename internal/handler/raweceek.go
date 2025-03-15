@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 
 	"codeberg.org/parfentjev/godrop/internal/godrop"
 )
@@ -51,9 +53,10 @@ func handleNextSessionCountdown(e *godrop.EventContext) {
 
 	for _, countdown := range data.Countdowns {
 		if countdown.Unit == key {
+			args := strings.Split(e.Message.Text.Value, " ")
 			response := fmt.Sprintf("%s begins in %.2f %s", data.Session.Summary, countdown.Value, countdown.Unit)
 
-			if data.IsRaceWeek {
+			if slices.Contains(args, "-c") {
 				response = prism(response)
 			}
 

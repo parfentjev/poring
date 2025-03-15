@@ -1,12 +1,12 @@
 package godrop
 
+// https://ircv3.net/specs/extensions/sasl-3.1.html#example-protocol-exchange
+
 import (
 	"bytes"
 	"encoding/base64"
 	"time"
 )
-
-var saslState = saslIdle
 
 const (
 	saslIdle = iota
@@ -15,9 +15,12 @@ const (
 	saslSentAuthPassword
 )
 
+var saslState = saslIdle
+
 func authenticate(g *GoDrop) {
 	g.Handle("CAP", handleCap)
-	g.Handle("AUTHENTICATE", handleAuthenticate)
+	g.Handle("AUTHENTICATE", handleSaslAuth)
+	g.Handle("903", handleSaslAuthSuccess)
 
 	saslState = saslRequested
 	g.send("CAP REQ :sasl")
@@ -38,7 +41,7 @@ func handleCap(e *EventContext) {
 	}
 }
 
-func handleAuthenticate(e *EventContext) {
+func handleSaslAuth(e *EventContext) {
 	if saslState != saslSentAuthPlain {
 		return
 	}
@@ -52,5 +55,14 @@ func handleAuthenticate(e *EventContext) {
 
 		saslState = saslSentAuthPassword
 		e.Sendf("AUTHENTICATE %v", base64.StdEncoding.EncodeToString(data.Bytes()))
+	}
+}
+
+func handleSaslAuthSuccess(e *EventContext) {
+	saslState = saslIdle
+	e.Send("CAP END")
+
+	for _, channel := range e.Config.Server.Channels {
+		e.Sendf("JOIN %s\n", channel)
 	}
 }
