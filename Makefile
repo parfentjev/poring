@@ -5,4 +5,4 @@ build:
 
 .PHONY: push
 push:
-	rsync image.tar root@${VPS_HOST}:/home/godrop/
+	rsync image.tar root@${VPS_HOST}:/root/godrop/

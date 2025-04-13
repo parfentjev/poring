@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"codeberg.org/parfentjev/godrop/internal/config"
+	"github.com/robfig/cron/v3"
 )
 
 type GoDrop struct {
 	config   *config.Config
 	handlers map[string][]EventHandler
 	conn     net.Conn
+	cron     *cron.Cron
 }
 
 type EventContext struct {
@@ -26,15 +28,25 @@ type EventContext struct {
 	Config  *config.Config
 }
 
+type ScheduleContext struct {
+	Send   func(s string)
+	Sendf  func(s string, a ...any)
+	Config *config.Config
+}
+
 type EventHandler func(e *EventContext)
 
-func New() (*GoDrop, error) {
-	config, err := config.New("./data/godrop.yaml")
-	if err != nil {
-		return &GoDrop{}, err
-	}
+type ScheduleHandler func(e *ScheduleContext)
 
-	return &GoDrop{config: config, handlers: make(map[string][]EventHandler)}, nil
+func New(config *config.Config) (*GoDrop, error) {
+	cron := cron.New()
+	cron.Start()
+
+	return &GoDrop{
+		config:   config,
+		handlers: make(map[string][]EventHandler),
+		cron:     cron,
+	}, nil
 }
 
 func (g *GoDrop) Run() {

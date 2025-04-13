@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	Server Server `yaml:"server"`
-	Sasl   Sasl   `yaml:"sasl"`
+	Server  Server  `yaml:"server"`
+	Sasl    Sasl    `yaml:"sasl"`
+	Handler Handler `yaml:"handler"`
 }
 
 type Server struct {
@@ -22,6 +23,15 @@ type Sasl struct {
 	Enabled  bool   `yaml:"enabled"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+}
+
+type Handler struct {
+	Next NextHandler `yaml:"next"`
+}
+
+type NextHandler struct {
+	Cron    string `yaml:"cron"`
+	Channel string `yaml:"channel"`
 }
 
 func New(file string) (*Config, error) {

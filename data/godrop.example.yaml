@@ -7,3 +7,7 @@ sasl:
   enabled: true
   username: mybot
   password: password
+handler:
+  next:
+    cron: "*/10 * * * *"
+    channel: "#channel1"
