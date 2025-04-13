@@ -84,7 +84,7 @@ func (g *GoDrop) listen() {
 
 	for scanner.Scan() {
 		input := strings.TrimRight(scanner.Text(), "\r\n")
-		log.Printf("%s\n", input)
+		log.Println(input)
 
 		message := parseInput(input)
 		for _, handler := range g.handlers[message.Command] {
@@ -94,8 +94,7 @@ func (g *GoDrop) listen() {
 }
 
 func (g *GoDrop) send(s string) {
-	fmt.Fprint(g.conn, s)
-	fmt.Fprint(g.conn, "\n")
+	g.sendf(s)
 }
 
 func (g *GoDrop) sendf(s string, a ...any) {
@@ -108,10 +107,10 @@ func (g *GoDrop) onConnect() {
 		authenticate(g)
 	}
 
-	fmt.Fprintf(g.conn, "NICK %s\n", g.config.Server.Nickname)
-	fmt.Fprintf(g.conn, "USER godrop 0 *: go\n")
+	g.sendf("NICK %s\n", g.config.Server.Nickname)
+	g.send("USER godrop 0 *: go\n")
 
 	for _, channel := range g.config.Server.Channels {
-		fmt.Fprintf(g.conn, "JOIN %s\n", channel)
+		g.sendf("JOIN %s\n", channel)
 	}
 }

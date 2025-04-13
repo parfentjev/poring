@@ -1,5 +1,5 @@
 server:
-  address: irc.server.address:6679
+  address: irc.server.address:6697
   tls: true
   nickname: mybot
   channels: ["#channel1", "#channel2"]

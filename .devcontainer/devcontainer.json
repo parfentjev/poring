@@ -1,0 +1,13 @@
+{
+    "name": "Go Development",
+    "dockerComposeFile": "docker-compose.yaml",
+    "service": "golang",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.Go"
+            ]
+        }
+    }
+}

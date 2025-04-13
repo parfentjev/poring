@@ -1,0 +1,6 @@
+services:
+  golang:
+    build: .
+    network_mode: host
+    volumes:
+      - ../..:/workspaces:cached
