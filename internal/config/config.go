@@ -26,12 +26,19 @@ type Sasl struct {
 }
 
 type Handler struct {
-	Next NextHandler `yaml:"next"`
+	Next   CronHandler  `yaml:"next"`
+	Poring TimerHandler `yaml:"poring"`
 }
 
-type NextHandler struct {
+type CronHandler struct {
 	Cron    string `yaml:"cron"`
 	Channel string `yaml:"channel"`
+}
+
+type TimerHandler struct {
+	TimerRangeStart int    `yaml:"timerRangeStart"`
+	TimerRangeEnd   int    `yaml:"timerRangeEnd"`
+	Channel         string `yaml:"channel"`
 }
 
 func New(file string) (*Config, error) {

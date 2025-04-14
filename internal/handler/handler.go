@@ -8,5 +8,6 @@ import (
 func RegisterHandlers(c *config.Config, g *godrop.GoDrop) {
 	g.Handle("PING", handlePing)
 	g.Handle("PRIVMSG", handleNextSessionCountdown)
-	g.Schedule(c.Handler.Next.Cron, handleNext)
+	g.CronSchedule(c.Handler.Next.Cron, handleNext)
+	g.TimerSchedule(c.Handler.Poring.TimerRangeStart, c.Handler.Poring.TimerRangeEnd, handlePoring)
 }

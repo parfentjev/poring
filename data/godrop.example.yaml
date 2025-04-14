@@ -9,5 +9,9 @@ sasl:
   password: password
 handler:
   next:
-    cron: "*/10 * * * *"
+    cron: "30 5 * * *"
+    channel: "#channel1"
+  poring:
+    timerRangeStart: 1440
+    timerRangeEnd: 10080
     channel: "#channel1"
