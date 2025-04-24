@@ -9,10 +9,12 @@ export const parseMessage = (input: string): IRCMessage => {
   let text = ''
 
   if (message[0].startsWith(':')) {
-    prefix = extractFirstElement(message)
+    prefix = message[0]
+    message.shift()
   }
 
-  command = extractFirstElement(message)
+  command = message[0]
+  message.shift()
 
   for (let i = 0; i < message.length; i++) {
     const token = message[i]
@@ -25,11 +27,4 @@ export const parseMessage = (input: string): IRCMessage => {
   }
 
   return { prefix, command, params, text }
-}
-
-function extractFirstElement(message: string[]): string {
-  const firstElement = message[0]
-  message.shift()
-
-  return firstElement
 }
