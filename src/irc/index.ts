@@ -1,12 +1,12 @@
-import * as tls from 'tls'
+import { connect as tlsConnect, TLSSocket } from 'tls'
 import Config from '../types/config'
 import { EventHandler } from '../types/irc'
-import SaslAuthenticationHandler from './sasl'
+import SaslAuthenticator from './sasl'
 import { parseMessage } from './message'
 
 class IRCBot {
   config: Config
-  socket!: tls.TLSSocket
+  socket!: TLSSocket
   handlers = new Map<string, EventHandler[]>()
 
   constructor(config: Config) {
@@ -14,28 +14,23 @@ class IRCBot {
   }
 
   connect() {
-    this.socket = tls.connect({
+    this.socket = tlsConnect({
       host: this.config.server.host,
       port: this.config.server.port,
     })
 
-    this.socket.on('data', (data) => this.read(data))
+    this.socket.on('data', (data: Buffer) => this.read(data))
     this.socket.on('end', () => this.connect())
 
-    if (this.config.sasl.enabled) new SaslAuthenticationHandler(this, this.joinChannels.bind(this)).handle()
+    if (this.config.sasl.enabled) new SaslAuthenticator(this, this.joinChannels.bind(this)).handle()
     this.send(`NICK ${this.config.server.nickname}`)
     this.send('USER poring 0 * :https://codeberg.org/parfentjev/poring')
     if (!this.config.sasl.enabled) this.joinChannels()
   }
 
   handle(command: string, handler: EventHandler) {
-    var commandHandlers = this.handlers.get(command)
-    if (!commandHandlers) {
-      commandHandlers = [handler]
-    } else {
-      commandHandlers.push(handler)
-    }
-
+    const commandHandlers = this.handlers.get(command) ?? []
+    commandHandlers.push(handler)
     this.handlers.set(command, commandHandlers)
   }
 

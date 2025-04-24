@@ -1,5 +1,5 @@
 import config from './config'
-import { registerHandlers } from './handler'
+import { registerHandlers } from './handlers'
 import IRCBot from './irc'
 
 const main = async () => {

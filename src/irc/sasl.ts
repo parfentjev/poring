@@ -8,7 +8,7 @@ enum State {
   AUTH_PASSWORD,
 }
 
-class SaslAuthenticationHandler {
+class SaslAuthenticator {
   state = State.IDLE
 
   bot: IRCBot
@@ -65,4 +65,4 @@ class SaslAuthenticationHandler {
   }
 }
 
-export default SaslAuthenticationHandler
+export default SaslAuthenticator
