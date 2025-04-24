@@ -1,2 +1,3 @@
-godrop.yaml
+node_modules/
+.env
 *.tar
