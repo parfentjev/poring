@@ -1,11 +1,13 @@
 import IRCBot from '../irc'
-import Config from '../types/config'
+import { IConfig } from '../types/config'
+import { handleNext } from './next'
 import { handlePing } from './ping'
+import { handlePoring } from './poring'
 import { handleCeeks } from './raweceek'
 
-export const registerHandlers = (config: Config, bot: IRCBot) => {
+export const registerHandlers = (config: IConfig, bot: IRCBot) => {
   bot.handle('PING', handlePing)
   bot.handle('PRIVMSG', handleCeeks)
-  // todo: handle next
-  // todo: handle poring
+  bot.cronSchedule(handleNext, config.handler.next.cron)
+  bot.timerSchedule(handlePoring, config.handler.poring.timerRangeStart, config.handler.poring.timerRangeEnd)
 }

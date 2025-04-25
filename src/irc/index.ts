@@ -1,15 +1,16 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
-import Config from '../types/config'
-import { IEventHandler } from '../types/irc'
+import { IConfig } from '../types/config'
+import { IEventHandler, IScheduleHandler } from '../types/irc'
 import SaslAuthenticator from './sasl'
 import { parseMessage } from './message'
+import { CronJob } from 'cron'
 
 class IRCBot {
-  config: Config
+  config: IConfig
   socket!: TLSSocket
   handlers = new Map<string, IEventHandler[]>()
 
-  constructor(config: Config) {
+  constructor(config: IConfig) {
     this.config = config
   }
 
@@ -37,6 +38,33 @@ class IRCBot {
   send(message: string) {
     console.log(`<= ${message}`)
     this.socket.write(`${message}\r\n`)
+  }
+
+  cronSchedule(handler: IScheduleHandler, expression: string) {
+    new CronJob(
+      expression,
+      () => {
+        handler({ send: this.send.bind(this), config: this.config })
+      },
+      null,
+      true,
+      'Etc/UTC'
+    )
+  }
+
+  timerSchedule(handler: IScheduleHandler, timerRangeStart: number, timerRangeEnd: number) {
+    const run = () => {
+      const minDuration = timerRangeStart * 60 * 1000
+      const maxDuration = timerRangeEnd * 60 * 1000
+      const randomDuration = minDuration + Math.floor(Math.random() * (maxDuration - minDuration))
+
+      setTimeout(() => {
+        handler({ send: this.send.bind(this), config: this.config })
+        run()
+      }, randomDuration)
+    }
+
+    run()
   }
 
   private read(data: Buffer) {

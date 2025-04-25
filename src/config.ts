@@ -1,9 +1,9 @@
 import dotenv from 'dotenv'
-import Config from './types/config'
+import { IConfig } from './types/config'
 
 dotenv.config()
 
-const config: Config = {
+const config: IConfig = {
   server: {
     host: process.env.SERVER_HOST!,
     port: parseInt(process.env.SERVER_PORT!, 10),
@@ -21,8 +21,8 @@ const config: Config = {
       channel: process.env.HANDLER_NEXT_CHANNEL!,
     },
     poring: {
-      timerRangeStart: parseInt(process.env.HANDLER_PORING_TIMERRANGESTART!, 10),
-      timerRangeEnd: parseInt(process.env.HANDLER_PORING_TIMERRANGEEND!, 10),
+      timerRangeStart: parseInt(process.env.HANDLER_PORING_TIMER_RANGE_START!, 10),
+      timerRangeEnd: parseInt(process.env.HANDLER_PORING_TIMER_RANGE_END!, 10),
       channel: process.env.HANDLER_PORING_CHANNEL!,
     },
   },

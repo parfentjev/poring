@@ -1,6 +1,6 @@
-import Config from './config'
+import { IConfig } from './config'
 
-interface IMessage {
+export interface IMessage {
   prefix: string
   command: string
   params: string[]
@@ -8,17 +8,26 @@ interface IMessage {
   isChannel(): boolean
 }
 
-interface IText {
+export interface IText {
   value: string
   command(): string
 }
 
-interface IEventContext {
+export interface IEventContext {
   send(message: string): void
   message: IMessage
-  config: Config
+  config: IConfig
 }
 
-interface IEventHandler {
-  (event: IEventContext): void
+export interface IEventHandler {
+  (context: IEventContext): void
+}
+
+export interface IScheduleContext {
+  send(message: string): void
+  config: IConfig
+}
+
+export interface IScheduleHandler {
+  (context: IScheduleContext): void
 }

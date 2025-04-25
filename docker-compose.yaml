@@ -1,5 +1,6 @@
 services:
   bot:
-    image: godrop:latest
-    volumes:
-      - ./data:/data
+    image: poring:latest
+    restart: unless-stopped
+    env_file:
+      - .env

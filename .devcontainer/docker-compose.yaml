@@ -1,6 +1,6 @@
 services:
-  godrop-dev:
+  poring-dev:
     image: node:latest
-    entrypoint: ["sleep", "infinity"]
+    entrypoint: ['sleep', 'infinity']
     volumes:
       - ../..:/workspaces:cached

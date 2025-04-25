@@ -1,36 +1,34 @@
-interface Config {
-  server: Server
-  sasl: Sasl
-  handler: Handler
+export interface IConfig {
+  server: IServer
+  sasl: ISasl
+  handler: IHandler
 }
 
-interface Server {
+export interface IServer {
   host: string
   port: number
   nickname: string
   channels: string[]
 }
 
-interface Sasl {
+export interface ISasl {
   enabled: boolean
   username: string
   password: string
 }
 
-interface Handler {
-  next: CronHandler
-  poring: TimerHandler
+export interface IHandler {
+  next: ICronHandler
+  poring: ITimerHandler
 }
 
-interface CronHandler {
+export interface ICronHandler {
   cron: string
   channel: string
 }
 
-interface TimerHandler {
+export interface ITimerHandler {
   timerRangeStart: number
   timerRangeEnd: number
   channel: string
 }
-
-export default Config

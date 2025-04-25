@@ -6,8 +6,9 @@ COPY . .
 RUN npm run build
 
 FROM node:latest AS release
+WORKDIR /release
 COPY --from=build /build/dist ./dist
 COPY --from=build /build/package*.json ./
-RUN npm install --only=production
+RUN npm install --omit=dev
 
 CMD ["node", "dist/index.js"]
