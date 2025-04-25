@@ -1,18 +1,24 @@
 import Config from './config'
 
-interface IRCMessage {
+interface IMessage {
   prefix: string
   command: string
   params: string[]
-  text: string
+  text: IText
+  isChannel(): boolean
 }
 
-interface EventContext {
-  send: (message: string) => void
-  message: IRCMessage
+interface IText {
+  value: string
+  command(): string
+}
+
+interface IEventContext {
+  send(message: string): void
+  message: IMessage
   config: Config
 }
 
-interface EventHandler {
-  (event: EventContext): void
+interface IEventHandler {
+  (event: IEventContext): void
 }

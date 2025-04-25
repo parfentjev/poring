@@ -1,8 +1,6 @@
-# GoDrop
+# Poring
 
-GoDrop is an IRC bot written in ~~Golang~~ TypeScript. The name was inspired by [Eggdrop](https://www.eggheads.org/). This is a personal project that doesn't aim to achieve anything in particular.
-
-You can find it at [#f1@libera.chat](https://libera.chat/) under the name "poring."
+Poring is an IRC bot written in TypeScript. This is a personal project that doesn't aim to achieve anything in particular. You can find it at [#f1@libera.chat](https://libera.chat/) under the name "poring."
 
 ![Poring IRC bot](logo.png)
 

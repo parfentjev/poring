@@ -1,13 +1,13 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
 import Config from '../types/config'
-import { EventHandler } from '../types/irc'
+import { IEventHandler } from '../types/irc'
 import SaslAuthenticator from './sasl'
 import { parseMessage } from './message'
 
 class IRCBot {
   config: Config
   socket!: TLSSocket
-  handlers = new Map<string, EventHandler[]>()
+  handlers = new Map<string, IEventHandler[]>()
 
   constructor(config: Config) {
     this.config = config
@@ -28,7 +28,7 @@ class IRCBot {
     if (!this.config.sasl.enabled) this.joinChannels()
   }
 
-  handle(command: string, handler: EventHandler) {
+  handle(command: string, handler: IEventHandler) {
     const commandHandlers = this.handlers.get(command) ?? []
     commandHandlers.push(handler)
     this.handlers.set(command, commandHandlers)

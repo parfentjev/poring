@@ -1,6 +1,41 @@
-import { IRCMessage } from '../types/irc'
+import { IMessage, IText } from '../types/irc'
 
-export const parseMessage = (input: string): IRCMessage => {
+export class Message implements IMessage {
+  prefix: string
+  command: string
+  params: string[]
+  text: IText
+
+  constructor(prefix: string, command: string, params: string[], text: IText) {
+    this.prefix = prefix
+    this.command = command
+    this.params = params
+    this.text = text
+  }
+
+  isChannel(): boolean {
+    if (this.params.length === 0) return false
+
+    return this.params[0].startsWith('#')
+  }
+}
+
+export class Text implements IText {
+  value: string
+
+  constructor(value: string) {
+    this.value = value
+  }
+
+  command(): string {
+    const i = this.value.indexOf(' ')
+    if (i === -1) return this.value
+
+    return this.value.slice(0, i)
+  }
+}
+
+export const parseMessage = (input: string): IMessage => {
   const message = input.trim().split(' ')
   const params: string[] = []
 
@@ -26,5 +61,6 @@ export const parseMessage = (input: string): IRCMessage => {
     params.push(token)
   }
 
-  return { prefix, command, params, text }
+  return new Message(prefix, command, params, new Text(text))
+  //{ prefix, command, params, text: { value: text } }
 }

@@ -1,5 +1,5 @@
 import IRCBot from '.'
-import { EventContext } from '../types/irc'
+import { IEventContext } from '../types/irc'
 
 enum State {
   IDLE,
@@ -30,37 +30,41 @@ class SaslAuthenticator {
     setInterval(() => (this.state = State.IDLE), 60000)
   }
 
-  private handleCap = (event: EventContext) => {
+  private handleCap = (context: IEventContext) => {
     if (this.state != State.REQUESTED) return
 
-    if (event.message.params.length === 2 && event.message.params[1] === 'ACK' && event.message.text === 'sasl') {
+    if (
+      context.message.params.length === 2 &&
+      context.message.params[1] === 'ACK' &&
+      context.message.text.value === 'sasl'
+    ) {
       this.state = State.AUTH_PLAIN
-      event.send('AUTHENTICATE PLAIN')
+      context.send('AUTHENTICATE PLAIN')
     } else {
       console.error('Authentication failed.')
     }
   }
 
-  private handleAuth = (event: EventContext) => {
+  private handleAuth = (context: IEventContext) => {
     if (this.state != State.AUTH_PLAIN) return
 
-    if (event.message.params.length > 0 && event.message.params[0] === '+') {
+    if (context.message.params.length > 0 && context.message.params[0] === '+') {
       const data = Buffer.concat([
         Buffer.from('\x00'),
-        Buffer.from(event.config.sasl.username),
+        Buffer.from(context.config.sasl.username),
         Buffer.from('\x00'),
-        Buffer.from(event.config.sasl.password),
+        Buffer.from(context.config.sasl.password),
       ]).toString('base64')
 
-      event.send(`AUTHENTICATE ${data}`)
+      context.send(`AUTHENTICATE ${data}`)
     } else {
       console.log('Authentication failed.')
     }
   }
 
-  private handleAuthSuccess = (event: EventContext) => {
+  private handleAuthSuccess = (context: IEventContext) => {
     this.state = State.IDLE
-    event.send('CAP END')
+    context.send('CAP END')
     this.onSuccess()
   }
 }

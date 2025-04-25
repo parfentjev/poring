@@ -1,3 +1,3 @@
-import { EventContext } from '../types/irc'
+import { IEventContext } from '../types/irc'
 
-export const handlePoring = (event: EventContext) => {}
+export const handlePoring = (context: IEventContext) => {}
