@@ -1,12 +1,12 @@
 {
-    "name": "Go Development",
+    "name": "Node Development",
     "dockerComposeFile": "docker-compose.yaml",
-    "service": "golang",
+    "service": "poring-dev",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "customizations": {
         "vscode": {
             "extensions": [
-                "golang.Go"
+                "esbenp.prettier-vscode"
             ]
         }
     }

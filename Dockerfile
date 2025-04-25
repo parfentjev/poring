@@ -1,16 +1,14 @@
-FROM golang:latest AS builder
+FROM node:latest AS build
 WORKDIR /build
-COPY go.mod ./go.mod
-COPY go.sum ./go.sum
-RUN go mod download
-COPY ./internal ./internal
-COPY ./main.go ./main.go
-RUN GOOS=linux go build -a -installsuffix cgo -o godrop .
+COPY package*.json .
+RUN npm install
+COPY . .
+RUN npm run build
 
-FROM debian:bookworm-slim
-RUN apt-get update
-RUN apt-get install -y ca-certificates
-RUN rm -rf /var/lib/apt/lists/*
-COPY --from=builder /build/godrop /usr/local/bin/godrop
+FROM node:latest AS release
+WORKDIR /release
+COPY --from=build /build/dist ./dist
+COPY --from=build /build/package*.json ./
+RUN npm install --omit=dev
 
-CMD [ "godrop" ]
+CMD ["node", "dist/index.js"]

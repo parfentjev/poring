@@ -1,6 +1,6 @@
 services:
-  golang:
-    build: .
-    network_mode: host
+  poring-dev:
+    image: node:latest
+    entrypoint: ['sleep', 'infinity']
     volumes:
       - ../..:/workspaces:cached
