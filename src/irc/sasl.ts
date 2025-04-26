@@ -1,4 +1,4 @@
-import IRCBot from '.'
+import { IRCBot } from '.'
 import { IEventContext } from '../types/irc'
 
 enum State {
@@ -8,7 +8,7 @@ enum State {
   AUTH_PASSWORD,
 }
 
-class SaslAuthenticator {
+export class SaslAuthenticator {
   state = State.IDLE
 
   bot: IRCBot
@@ -20,9 +20,9 @@ class SaslAuthenticator {
   }
 
   handle = () => {
-    this.bot.handle('CAP', this.handleCap)
-    this.bot.handle('AUTHENTICATE', this.handleAuth)
-    this.bot.handle('903', this.handleAuthSuccess)
+    this.bot.addEventListener('CAP', this.handleCap)
+    this.bot.addEventListener('AUTHENTICATE', this.handleAuth)
+    this.bot.addEventListener('903', this.handleAuthSuccess)
 
     this.state = State.REQUESTED
     this.bot.send('CAP REQ :sasl')
@@ -68,5 +68,3 @@ class SaslAuthenticator {
     this.onSuccess()
   }
 }
-
-export default SaslAuthenticator

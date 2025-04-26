@@ -1,11 +1,11 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
 import { IConfig } from '../types/config'
 import { IEventHandler, IScheduleHandler } from '../types/irc'
-import SaslAuthenticator from './sasl'
+import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
 import { CronJob } from 'cron'
 
-class IRCBot {
+export class IRCBot {
   config: IConfig
   socket!: TLSSocket
   handlers = new Map<string, IEventHandler[]>()
@@ -20,7 +20,7 @@ class IRCBot {
       port: this.config.server.port,
     })
 
-    this.socket.on('data', (data: Buffer) => this.read(data))
+    this.socket.on('data', (data) => this.read(data))
     this.socket.on('end', () => this.connect())
 
     if (this.config.sasl.enabled) new SaslAuthenticator(this, this.joinChannels).handle()
@@ -29,18 +29,18 @@ class IRCBot {
     if (!this.config.sasl.enabled) this.joinChannels()
   }
 
-  handle = (command: string, handler: IEventHandler) => {
-    const commandHandlers = this.handlers.get(command) ?? []
-    commandHandlers.push(handler)
-    this.handlers.set(command, commandHandlers)
-  }
-
   send = (message: string) => {
     console.log(`<= ${message}`)
     this.socket.write(`${message}\r\n`)
   }
 
-  cronSchedule = (handler: IScheduleHandler, expression: string) => {
+  addEventListener = (event: string, handler: IEventHandler) => {
+    const commandHandlers = this.handlers.get(event) ?? []
+    commandHandlers.push(handler)
+    this.handlers.set(event, commandHandlers)
+  }
+
+  addCronJob = (handler: IScheduleHandler, expression: string) => {
     new CronJob(
       expression,
       () => {
@@ -52,7 +52,7 @@ class IRCBot {
     )
   }
 
-  timerSchedule = (handler: IScheduleHandler, timerRangeStart: number, timerRangeEnd: number) => {
+  addTimerJob = (handler: IScheduleHandler, timerRangeStart: number, timerRangeEnd: number) => {
     const run = () => {
       // Convert range boundaries from minutes to milliseconds
       const minDuration = timerRangeStart * 60 * 1000
@@ -91,5 +91,3 @@ class IRCBot {
     this.config.server.channels.forEach((channel) => this.send(`JOIN ${channel}`))
   }
 }
-
-export default IRCBot

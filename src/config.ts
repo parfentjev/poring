@@ -3,7 +3,7 @@ import { IConfig } from './types/config'
 
 dotenv.config()
 
-const config: IConfig = {
+export const config: IConfig = {
   server: {
     host: process.env.SERVER_HOST!,
     port: parseInt(process.env.SERVER_PORT!, 10),
@@ -27,5 +27,3 @@ const config: IConfig = {
     },
   },
 }
-
-export default config
