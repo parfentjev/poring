@@ -14,7 +14,7 @@ class IRCBot {
     this.config = config
   }
 
-  connect() {
+  connect = () => {
     this.socket = tlsConnect({
       host: this.config.server.host,
       port: this.config.server.port,
@@ -23,28 +23,28 @@ class IRCBot {
     this.socket.on('data', (data: Buffer) => this.read(data))
     this.socket.on('end', () => this.connect())
 
-    if (this.config.sasl.enabled) new SaslAuthenticator(this, this.joinChannels.bind(this)).handle()
+    if (this.config.sasl.enabled) new SaslAuthenticator(this, this.joinChannels).handle()
     this.send(`NICK ${this.config.server.nickname}`)
     this.send('USER poring 0 * :https://codeberg.org/parfentjev/poring')
     if (!this.config.sasl.enabled) this.joinChannels()
   }
 
-  handle(command: string, handler: IEventHandler) {
+  handle = (command: string, handler: IEventHandler) => {
     const commandHandlers = this.handlers.get(command) ?? []
     commandHandlers.push(handler)
     this.handlers.set(command, commandHandlers)
   }
 
-  send(message: string) {
+  send = (message: string) => {
     console.log(`<= ${message}`)
     this.socket.write(`${message}\r\n`)
   }
 
-  cronSchedule(handler: IScheduleHandler, expression: string) {
+  cronSchedule = (handler: IScheduleHandler, expression: string) => {
     new CronJob(
       expression,
       () => {
-        handler({ send: this.send.bind(this), config: this.config })
+        handler({ send: this.send, config: this.config })
       },
       null,
       true,
@@ -52,14 +52,15 @@ class IRCBot {
     )
   }
 
-  timerSchedule(handler: IScheduleHandler, timerRangeStart: number, timerRangeEnd: number) {
+  timerSchedule = (handler: IScheduleHandler, timerRangeStart: number, timerRangeEnd: number) => {
     const run = () => {
+      // Convert range boundaries from minutes to milliseconds
       const minDuration = timerRangeStart * 60 * 1000
       const maxDuration = timerRangeEnd * 60 * 1000
       const randomDuration = minDuration + Math.floor(Math.random() * (maxDuration - minDuration))
 
       setTimeout(() => {
-        handler({ send: this.send.bind(this), config: this.config })
+        handler({ send: this.send, config: this.config })
         run()
       }, randomDuration)
     }
@@ -67,7 +68,7 @@ class IRCBot {
     run()
   }
 
-  private read(data: Buffer) {
+  private read = (data: Buffer) => {
     data
       .toString()
       .trim()
@@ -78,7 +79,7 @@ class IRCBot {
         const message = parseMessage(raw)
         this.handlers.get(message.command)?.forEach((handler) => {
           handler({
-            send: this.send.bind(this),
+            send: this.send,
             message,
             config: this.config,
           })
@@ -86,7 +87,7 @@ class IRCBot {
       })
   }
 
-  private joinChannels() {
+  private joinChannels = () => {
     this.config.server.channels.forEach((channel) => this.send(`JOIN ${channel}`))
   }
 }

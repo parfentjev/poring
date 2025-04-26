@@ -13,7 +13,7 @@ export class Message implements IMessage {
     this.text = text
   }
 
-  isChannel(): boolean {
+  isChannel = () => {
     if (this.params.length === 0) return false
 
     return this.params[0].startsWith('#')
@@ -27,7 +27,7 @@ export class Text implements IText {
     this.value = value
   }
 
-  command(): string {
+  command = () => {
     const i = this.value.indexOf(' ')
     if (i === -1) return this.value
 
@@ -62,5 +62,4 @@ export const parseMessage = (input: string): IMessage => {
   }
 
   return new Message(prefix, command, params, new Text(text))
-  //{ prefix, command, params, text: { value: text } }
 }
