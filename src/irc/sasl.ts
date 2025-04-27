@@ -1,16 +1,10 @@
 import { IRCBot } from '.'
 import { IEventContext } from '../types/irc'
 
-enum State {
-  IDLE,
-  REQUESTED,
-  AUTH_PLAIN,
-  AUTH_PASSWORD,
-}
+type State = 'idle' | 'requested' | 'authPlain' | 'authPassword'
 
 export class SaslAuthenticator {
-  state = State.IDLE
-
+  state: State = 'idle'
   bot: IRCBot
   onSuccess!: Function
 
@@ -24,21 +18,21 @@ export class SaslAuthenticator {
     this.bot.addEventListener('AUTHENTICATE', this.handleAuth)
     this.bot.addEventListener('903', this.handleAuthSuccess)
 
-    this.state = State.REQUESTED
+    this.state = 'requested'
     this.bot.send('CAP REQ :sasl')
 
-    setInterval(() => (this.state = State.IDLE), 60000)
+    setInterval(() => (this.state = 'idle'), 60000)
   }
 
   private handleCap = (context: IEventContext) => {
-    if (this.state != State.REQUESTED) return
+    if (this.state != 'requested') return
 
     if (
       context.message.params.length === 2 &&
       context.message.params[1] === 'ACK' &&
       context.message.text.value === 'sasl'
     ) {
-      this.state = State.AUTH_PLAIN
+      this.state = 'authPlain'
       context.send('AUTHENTICATE PLAIN')
     } else {
       console.error('Authentication failed.')
@@ -46,7 +40,7 @@ export class SaslAuthenticator {
   }
 
   private handleAuth = (context: IEventContext) => {
-    if (this.state != State.AUTH_PLAIN) return
+    if (this.state != 'authPlain') return
 
     if (context.message.params.length > 0 && context.message.params[0] === '+') {
       const data = Buffer.concat([
@@ -63,7 +57,7 @@ export class SaslAuthenticator {
   }
 
   private handleAuthSuccess = (context: IEventContext) => {
-    this.state = State.IDLE
+    this.state = 'idle'
     context.send('CAP END')
     this.onSuccess()
   }

@@ -6,7 +6,7 @@ dotenv.config()
 export const config: IConfig = {
   server: {
     host: process.env.SERVER_HOST!,
-    port: parseInt(process.env.SERVER_PORT!, 10),
+    port: +process.env.SERVER_PORT!,
     nickname: process.env.SERVER_NICKNAME!,
     channels: process.env.SERVER_CHANNELS!.split(','),
   },
@@ -21,8 +21,8 @@ export const config: IConfig = {
       channel: process.env.HANDLER_NEXT_CHANNEL!,
     },
     poring: {
-      timerRangeStart: parseInt(process.env.HANDLER_PORING_TIMER_RANGE_START!, 10),
-      timerRangeEnd: parseInt(process.env.HANDLER_PORING_TIMER_RANGE_END!, 10),
+      timerRangeStart: +process.env.HANDLER_PORING_TIMER_RANGE_START!,
+      timerRangeEnd: +process.env.HANDLER_PORING_TIMER_RANGE_END!,
       channel: process.env.HANDLER_PORING_CHANNEL!,
     },
   },
