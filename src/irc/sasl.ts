@@ -4,14 +4,7 @@ import { IEventContext } from '../types/irc'
 type State = 'idle' | 'requested' | 'authPlain' | 'authPassword'
 
 export class SaslAuthenticator {
-  state: State = 'idle'
-  bot: IRCBot
-  onSuccess!: Function
-
-  constructor(bot: IRCBot, onSuccess: Function) {
-    this.bot = bot
-    this.onSuccess = onSuccess
-  }
+  constructor(public bot: IRCBot, public onSuccess: Function, private state: State = 'idle') {}
 
   handle = () => {
     this.bot.addEventListener('CAP', this.handleCap)

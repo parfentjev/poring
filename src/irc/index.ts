@@ -6,13 +6,10 @@ import { parseMessage } from './message'
 import { CronJob } from 'cron'
 
 export class IRCBot {
-  config: IConfig
   socket!: TLSSocket
   handlers = new Map<string, IEventHandler[]>()
 
-  constructor(config: IConfig) {
-    this.config = config
-  }
+  constructor(public config: IConfig) {}
 
   connect = () => {
     this.socket = tlsConnect({

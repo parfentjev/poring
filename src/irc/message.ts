@@ -1,17 +1,7 @@
 import { IMessage, IText } from '../types/irc'
 
 export class Message implements IMessage {
-  prefix: string
-  command: string
-  params: string[]
-  text: IText
-
-  constructor(prefix: string, command: string, params: string[], text: IText) {
-    this.prefix = prefix
-    this.command = command
-    this.params = params
-    this.text = text
-  }
+  constructor(public prefix: string, public command: string, public params: string[], public text: IText) {}
 
   isChannel = () => {
     if (this.params.length === 0) return false
@@ -21,11 +11,7 @@ export class Message implements IMessage {
 }
 
 export class Text implements IText {
-  value: string
-
-  constructor(value: string) {
-    this.value = value
-  }
+  constructor(public value: string) {}
 
   command = () => {
     const i = this.value.indexOf(' ')
