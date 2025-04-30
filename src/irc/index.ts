@@ -1,5 +1,5 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
-import { IConfig } from '../types/config'
+import { IConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
 import { IEventHandler, IScheduleHandler } from '../types/irc'
 import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
@@ -40,9 +40,9 @@ export class IRCBot {
     this.handlers.set(event, commandHandlers)
   }
 
-  addCronJob = (handler: IScheduleHandler, expression: string) => {
+  addCronJob = (handler: IScheduleHandler, config: ICronHandlerConfig) => {
     new CronJob(
-      expression,
+      config.cron,
       () => {
         handler({ send: this.send, config: this.config })
       },
@@ -52,11 +52,11 @@ export class IRCBot {
     )
   }
 
-  addTimerJob = (handler: IScheduleHandler, timerRangeStart: number, timerRangeEnd: number) => {
+  addTimerJob = (handler: IScheduleHandler, config: ITimerHandlerConfig) => {
     const run = () => {
       // Convert range boundaries from minutes to milliseconds
-      const minDuration = timerRangeStart * 60 * 1000
-      const maxDuration = timerRangeEnd * 60 * 1000
+      const minDuration = config.timerRangeStart * 60 * 1000
+      const maxDuration = config.timerRangeEnd * 60 * 1000
       const randomDuration = minDuration + Math.floor(Math.random() * (maxDuration - minDuration))
 
       setTimeout(() => {

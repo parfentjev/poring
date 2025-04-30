@@ -1,10 +1,10 @@
 import dotenv from 'dotenv'
-import { IConfig, IHandler, ISasl, IServer } from './types/config'
+import { IConfig, IHandlerConfig, ISaslConfig, IServerConfig } from './types/config'
 
 export class Config implements IConfig {
-  server: IServer
-  sasl: ISasl
-  handler: IHandler
+  server: IServerConfig
+  sasl: ISaslConfig
+  handler: IHandlerConfig
 
   constructor() {
     dotenv.config()

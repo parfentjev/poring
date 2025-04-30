@@ -8,6 +8,6 @@ import { handleCeeks } from './raweceek'
 export const addListeners = (config: IConfig, bot: IRCBot) => {
   bot.addEventListener('PING', handlePing)
   bot.addEventListener('PRIVMSG', handleCeeks)
-  bot.addCronJob(handleNext, config.handler.next.cron)
-  bot.addTimerJob(handlePoring, config.handler.poring.timerRangeStart, config.handler.poring.timerRangeEnd)
+  bot.addCronJob(handleNext, config.handler.next)
+  bot.addTimerJob(handlePoring, config.handler.poring)
 }
