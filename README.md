@@ -25,7 +25,7 @@ Each morning at 08:30 Tallinn time, the bot sends `!n` to #f1. I used to do this
 
 ## Poring Actions
 
-The bot also has a bit of personality. Periodically, within a range of one to seven days, it sends a `/me` action to #f1, acting as a poring creature from Ragnarok Online.
+The bot also has a bit of personality. Periodically it sends a `/me` action to #f1, acting as a poring creature from Ragnarok Online.
 
 An example:
 
