@@ -1,5 +1,6 @@
 export interface IConfig {
   server: IServerConfig
+  storage: IStorageConfig
   sasl: ISaslConfig
   handler: IHandlerConfig
 }
@@ -9,6 +10,13 @@ export interface IServerConfig {
   port: number
   nickname: string
   channels: string[]
+}
+
+export interface IStorageConfig {
+  host: string
+  database: string
+  user: string
+  password: string
 }
 
 export interface ISaslConfig {

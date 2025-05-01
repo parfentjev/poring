@@ -4,12 +4,13 @@ import { IEventHandler, IScheduleHandler } from '../types/irc'
 import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
 import { CronJob } from 'cron'
+import { IStorage } from '../types/storage'
 
 export class IRCBot {
   socket!: TLSSocket
   handlers = new Map<string, IEventHandler[]>()
 
-  constructor(public config: IConfig) {}
+  constructor(public config: IConfig, private storage: IStorage) {}
 
   connect = () => {
     this.socket = tlsConnect({
@@ -41,7 +42,7 @@ export class IRCBot {
     new CronJob(
       config.cron,
       () => {
-        handler({ send: this.send, config: this.config })
+        handler({ send: this.send, config: this.config, storage: this.storage })
       },
       null,
       true,
@@ -57,7 +58,7 @@ export class IRCBot {
       const randomDuration = minDuration + Math.floor(Math.random() * (maxDuration - minDuration))
 
       setTimeout(() => {
-        handler({ send: this.send, config: this.config })
+        handler({ send: this.send, config: this.config, storage: this.storage })
         run()
       }, randomDuration)
     }
@@ -79,6 +80,7 @@ export class IRCBot {
             send: this.send,
             message,
             config: this.config,
+            storage: this.storage,
           })
         })
       })

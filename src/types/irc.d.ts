@@ -1,4 +1,5 @@
 import { IConfig } from './config'
+import { IStorage } from './storage'
 
 export interface IMessage {
   prefix: string
@@ -17,6 +18,7 @@ export interface IEventContext {
   send(message: string): void
   message: IMessage
   config: IConfig
+  storage: IStorage
 }
 
 export interface IEventHandler {
@@ -26,6 +28,7 @@ export interface IEventHandler {
 export interface IScheduleContext {
   send(message: string): void
   config: IConfig
+  storage: IStorage
 }
 
 export interface IScheduleHandler {
