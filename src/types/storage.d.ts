@@ -1,7 +1,7 @@
 export interface IStorage {
   connect: () => void
-  getRandomMessage: (category: string) => Promise<IStorageMessage>
-  increaseMessageUsageCount: (messageId: string) => Promise<void>
+  getRandomMessage: (category: string) => Promise<IStorageMessage | null>
+  increaseMessageUsageCount: (messageId: string) => void
 }
 
 export interface IStorageMessage {
