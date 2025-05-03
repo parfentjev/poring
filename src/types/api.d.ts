@@ -1,4 +1,4 @@
-export interface RaweCeekResponse {
+export interface SessionsCountdownResponse {
   session: RaweCeekSesson
   countdowns: RaweCeekCountdown[]
   isRaceWeek: boolean
@@ -7,7 +7,7 @@ export interface RaweCeekResponse {
 export interface RaweCeekSesson {
   summary: string
   location: string
-  startTime: Date
+  startTime: string
 }
 
 export interface RaweCeekCountdown {
