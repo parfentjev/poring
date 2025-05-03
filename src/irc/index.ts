@@ -7,10 +7,12 @@ import { CronJob } from 'cron'
 import { IStorage } from '../types/storage'
 
 export class IRCBot {
-  socket!: TLSSocket
-  handlers = new Map<string, IEventHandler[]>()
-
-  constructor(public config: IConfig, private storage: IStorage) {}
+  constructor(
+    private config: IConfig,
+    private storage: IStorage,
+    private socket: TLSSocket | null = null,
+    private handlers = new Map<string, IEventHandler[]>()
+  ) {}
 
   connect = () => {
     this.socket = tlsConnect({
@@ -28,6 +30,8 @@ export class IRCBot {
   }
 
   send = (message: string) => {
+    if (!this.socket) return
+
     console.log(`<= ${message}`)
     this.socket.write(`${message}\r\n`)
   }
