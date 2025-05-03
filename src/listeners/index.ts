@@ -1,10 +1,9 @@
 import { IRCBot } from '../irc'
 import { IConfig } from '../types/config'
-import { handleCountdown } from './countdown'
 import { handleNext } from './next'
 import { handlePing } from './ping'
 import { handlePoring } from './poring'
-import { handleCeeks } from './raweceek'
+import { handleCeeks, handleCountdown } from './raweceek'
 
 export const addListeners = (config: IConfig, bot: IRCBot) => {
   bot.addEventListener('PING', handlePing)

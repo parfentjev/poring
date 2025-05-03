@@ -6,7 +6,7 @@ export class Storage implements IStorage {
   constructor(private config: IStorageConfig, private conn: mariadb.Connection | null = null) {}
 
   connect = async () => {
-    console.log('[stroage] Connecting to the database')
+    console.log('[storage] Connecting to the database')
 
     this.conn = await mariadb.createConnection({
       host: this.config.host,
@@ -15,10 +15,7 @@ export class Storage implements IStorage {
       password: this.config.password,
     })
 
-    console.log('[stroage] Connected to the database')
-
     this.conn.on('error', () => {
-      console.error('[stroage] Caught and error')
       this.handleError()
     })
   }
@@ -32,9 +29,7 @@ export class Storage implements IStorage {
     try {
       await this.connect()
     } catch (error) {
-      console.error('[stroage] Failed to connect to the database')
-
-      setTimeout(() => this.handleError(), 10000)
+      setTimeout(() => this.handleError(), 1000)
     }
   }
 
@@ -42,10 +37,8 @@ export class Storage implements IStorage {
     if (this.conn === null) return null
 
     try {
-      return (await this.conn!.query(sql, params)) as T
+      return (await this.conn.query(sql, params)) as T
     } catch (error) {
-      console.error('[storage] Query failed:', error)
-
       return null
     }
   }
@@ -62,7 +55,7 @@ export class Storage implements IStorage {
       category
     )
 
-    return data ? data[0] : null
+    return data && data.length === 1 ? data[0] : null
   }
 
   increaseMessageUsageCount = async (messageId: string) => {

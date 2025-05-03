@@ -1,3 +1,5 @@
+export type SessionsNextResponse = RaweCeekSesson
+
 export interface SessionsCountdownResponse {
   session: RaweCeekSesson
   countdowns: RaweCeekCountdown[]
@@ -8,6 +10,7 @@ export interface RaweCeekSesson {
   summary: string
   location: string
   startTime: string
+  timeUntil: string
 }
 
 export interface RaweCeekCountdown {

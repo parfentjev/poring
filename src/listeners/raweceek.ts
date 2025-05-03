@@ -14,17 +14,30 @@ export const handleCeeks = (context: IEventContext) => {
   const unit = commandUnitMap.get(context.message.text.command())
   if (!unit) return
 
-  raweceekClient.fetchCountdown().then((response) => {
+  raweceekClient.sessionsCountdown().then((response) => {
     if (!response) return
 
     response.countdowns
       .filter((countdown) => countdown.unit === unit)
       .forEach((countdown) => {
-        const text = `${response.session.summary} begins in ${countdown.value.toFixed(2)} ${countdown.unit} at ${
-          response.session.startTime
-        }`
+        const text = `\x02${response.session.summary}\x02 begins in ${countdown.value.toFixed(2)} ${
+          countdown.unit
+        } at ${response.session.startTime}`
 
         context.send(`PRIVMSG ${context.message.params[0]} :${text} 🎉`)
       })
+  })
+}
+
+export const handleCountdown = (context: IEventContext) => {
+  if (!context.message.isChannel()) return
+
+  if (context.message.text.command() !== '!!n') return
+
+  raweceekClient.sessionsNext().then((response) => {
+    if (!response) return
+
+    const text = `\x02${response.summary}\x02 begins in ${response.timeUntil} at ${response.startTime}`
+    context.send(`PRIVMSG ${context.message.params[0]} :${text} 🎉`)
   })
 }
