@@ -1,10 +1,8 @@
 import { IRCBot } from '.'
-import { IEventContext } from '../types/irc'
+import { IEventContext, ISaslAuthenticator, SaslState } from '../types/irc'
 
-type State = 'idle' | 'requested' | 'authPlain' | 'authPassword'
-
-export class SaslAuthenticator {
-  constructor(public bot: IRCBot, public onSuccess: Function, private state: State = 'idle') {}
+export class SaslAuthenticator implements ISaslAuthenticator {
+  constructor(private bot: IRCBot, private onSuccess: Function, private state: SaslState = 'idle') {}
 
   handle = () => {
     this.bot.addEventListener('CAP', this.handleCap)

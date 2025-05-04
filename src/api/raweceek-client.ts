@@ -1,6 +1,6 @@
-import { SessionsCountdownResponse, SessionsNextResponse } from '../types/api'
+import { IRaweCeekApiClient, SessionsCountdownResponse, SessionsNextResponse } from '../types/api'
 
-class RaweCeekApiClient {
+class RaweCeekApiClient implements IRaweCeekApiClient {
   constructor(private baseUrl = 'https://raweceek.eu/api') {}
 
   private call = async <T>(endpoint: string): Promise<T | null> => {

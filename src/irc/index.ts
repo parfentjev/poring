@@ -1,12 +1,12 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
 import { IConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
-import { IEventHandler, IScheduleHandler } from '../types/irc'
+import { IEventHandler, IIRCBot, IScheduleHandler } from '../types/irc'
 import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
 import { CronJob } from 'cron'
 import { IStorage } from '../types/storage'
 
-export class IRCBot {
+export class IRCBot implements IIRCBot {
   constructor(
     private config: IConfig,
     private storage: IStorage,

@@ -1,6 +1,14 @@
 import { IConfig } from './config'
 import { IStorage } from './storage'
 
+export interface IIRCBot {
+  connect: () => void
+  send: (message: string) => void
+  addEventListener: (event: string, handler: IEventHandler) => void
+  addCronJob: (handler: IScheduleHandler, config: ICronHandlerConfig) => void
+  addTimerJob: (handler: IScheduleHandler, config: ITimerHandlerConfig) => void
+}
+
 export interface IMessage {
   prefix: string
   command: string
@@ -33,4 +41,10 @@ export interface IScheduleContext {
 
 export interface IScheduleHandler {
   (context: IScheduleContext): void
+}
+
+export type SaslState = 'idle' | 'requested' | 'authPlain' | 'authPassword'
+
+export interface ISaslAuthenticator {
+  handle: () => void
 }

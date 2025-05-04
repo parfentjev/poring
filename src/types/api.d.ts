@@ -1,3 +1,8 @@
+export interface IRaweCeekApiClient {
+  sessionsNext: () => Promise<SessionsNextResponse | null>
+  sessionsCountdown: () => Promise<SessionsCountdownResponse | null>
+}
+
 export type SessionsNextResponse = RaweCeekSesson
 
 export interface SessionsCountdownResponse {
