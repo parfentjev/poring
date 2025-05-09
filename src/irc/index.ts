@@ -1,17 +1,19 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
 import { IConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
-import { IEventHandler, IIRCBot, IScheduleHandler } from '../types/irc'
+import { IEventHandler, IIRCBot, IScheduleHandler, IScheduler } from '../types/irc'
 import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
 import { CronJob } from 'cron'
-import { IStorage } from '../types/storage'
+import { IStorage, IStorageTimer } from '../types/storage'
+import { Scheduler } from './scheduler'
 
 export class IRCBot implements IIRCBot {
   constructor(
     private config: IConfig,
     private storage: IStorage,
     private socket: TLSSocket | null = null,
-    private handlers = new Map<string, IEventHandler[]>()
+    private handlers = new Map<string, IEventHandler[]>(),
+    private scheduler: IScheduler = new Scheduler(this.send, config, storage)
   ) {}
 
   connect = () => {
@@ -43,31 +45,11 @@ export class IRCBot implements IIRCBot {
   }
 
   addCronJob = (handler: IScheduleHandler, config: ICronHandlerConfig) => {
-    new CronJob(
-      config.cron,
-      () => {
-        handler({ send: this.send, config: this.config, storage: this.storage })
-      },
-      null,
-      true,
-      'Etc/UTC'
-    )
+    this.scheduler.addCronJob(handler, config)
   }
 
   addTimerJob = (handler: IScheduleHandler, config: ITimerHandlerConfig) => {
-    const run = () => {
-      // Convert range boundaries from minutes to milliseconds
-      const minDuration = config.timerRangeStart * 60 * 1000
-      const maxDuration = config.timerRangeEnd * 60 * 1000
-      const randomDuration = minDuration + Math.floor(Math.random() * (maxDuration - minDuration))
-
-      setTimeout(() => {
-        handler({ send: this.send, config: this.config, storage: this.storage })
-        run()
-      }, randomDuration)
-    }
-
-    run()
+    this.scheduler.addTimerJob(handler, config)
   }
 
   private read = (data: Buffer) => {

@@ -36,6 +36,7 @@ export interface ICronHandlerConfig {
 }
 
 export interface ITimerHandlerConfig {
+  id: string
   timerRangeStart: number
   timerRangeEnd: number
   channel: string

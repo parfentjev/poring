@@ -36,6 +36,7 @@ export class Config implements IConfig {
         channel: process.env.HANDLER_NEXT_CHANNEL!,
       },
       poring: {
+        id: process.env.HANDLER_PORING_ID!,
         timerRangeStart: +process.env.HANDLER_PORING_TIMER_RANGE_START!,
         timerRangeEnd: +process.env.HANDLER_PORING_TIMER_RANGE_END!,
         channel: process.env.HANDLER_PORING_CHANNEL!,

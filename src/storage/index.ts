@@ -1,13 +1,11 @@
 import { IStorageConfig } from '../types/config'
 import mariadb from 'mariadb'
-import { IStorage, IStorageMessage } from '../types/storage'
+import { IStorage, IStorageMessage, IStorageTimer, QueryData } from '../types/storage'
 
 export class Storage implements IStorage {
   constructor(private config: IStorageConfig, private conn: mariadb.Connection | null = null) {}
 
   connect = async () => {
-    console.log('[storage] Connecting to the database')
-
     this.conn = await mariadb.createConnection({
       host: this.config.host,
       database: this.config.database,
@@ -33,18 +31,19 @@ export class Storage implements IStorage {
     }
   }
 
-  private query = async <T>(sql: string, ...params: any[]): Promise<T | null> => {
+  private execute = async (sql: string, ...params: any[]): Promise<any | null> => {
     if (this.conn === null) return null
 
     try {
-      return (await this.conn.query(sql, params)) as T
+      return await this.conn.query(sql, params)
     } catch (error) {
+      console.error(error)
       return null
     }
   }
 
-  getRandomMessage = async (category: string) => {
-    const data = await this.query<IStorageMessage[]>(
+  getRandomMessage = async (category: string): QueryData<IStorageMessage> => {
+    const data = await this.execute(
       `
       SELECT id, text 
       FROM messages 
@@ -55,11 +54,16 @@ export class Storage implements IStorage {
       category
     )
 
-    return data && data.length === 1 ? data[0] : null
+    if (!data || data.length !== 1) return null
+
+    return {
+      id: data[0].id,
+      text: data[0].text,
+    }
   }
 
   increaseMessageUsageCount = async (messageId: string) => {
-    await this.query(
+    await this.execute(
       `
       UPDATE messages
       SET usage_count = usage_count + 1, 
@@ -68,5 +72,38 @@ export class Storage implements IStorage {
       `,
       messageId
     )
+  }
+
+  upsertTimer = async (id: string, executeAt: Date, executed: boolean) => {
+    await this.execute(
+      `
+      INSERT INTO timers (id, execute_at, executed)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE execute_at = VALUES(execute_at), executed = VALUES(executed)
+      `,
+      id,
+      executeAt.toISOString().slice(0, 19).replace('T', ' '),
+      executed
+    )
+  }
+
+  getTimer = async (id: string): QueryData<IStorageTimer> => {
+    const data = await this.execute(
+      `
+      SELECT id, execute_at, executed
+      FROM timers
+      WHERE id = ?
+      LIMIT 1
+      `,
+      id
+    )
+
+    if (!data || data.length !== 1) return null
+
+    return {
+      id: data[0].id,
+      executeAt: new Date(data[0].execute_at),
+      executed: Boolean(data[0].executed),
+    }
   }
 }

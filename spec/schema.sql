@@ -6,3 +6,9 @@ CREATE TABLE messages (
     last_used TIMESTAMP NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE timers (
+    id VARCHAR(128) PRIMARY KEY NOT NULL,
+    execute_at TIMESTAMP NOT NULL,
+    executed BOOLEAN NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
