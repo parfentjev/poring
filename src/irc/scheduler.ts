@@ -2,19 +2,20 @@ import { CronJob } from 'cron'
 import { IConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
 import { IExecutionTimeCalculator, IScheduleHandler, IScheduler, SendFunction } from '../types/irc'
 import { IStorage } from '../types/storage'
+import { DateProvider, plusMinutes } from '../util/date'
 
 export class ExecutionTimeCalculator implements IExecutionTimeCalculator {
+  constructor(private dateProvider = new DateProvider()) {}
+
   randomTime = (start: number, end: number) => {
-    const executeAt = new Date()
     const randomDelay = start + Math.floor(Math.random() * (end - start))
-    executeAt.setMinutes(executeAt.getMinutes() + randomDelay)
+    const executeAt = plusMinutes(this.dateProvider.now(), randomDelay)
 
     return executeAt
   }
 
   fromDate = (existingDate: Date, minDelay: number) => {
-    const minBuffer = new Date()
-    minBuffer.setMinutes(minBuffer.getMinutes() + minDelay)
+    const minBuffer = plusMinutes(this.dateProvider.now(), minDelay)
 
     return existingDate < minBuffer ? minBuffer : existingDate
   }
