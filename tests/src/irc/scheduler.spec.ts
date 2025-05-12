@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-import { describe, it } from 'node:test'
 import { ExecutionTimeCalculator } from '../../../src/irc/scheduler'
 import { DateProviderMock } from '../../util/date'
 import { plusMinutes } from '../../../src/util/date'
