@@ -1,8 +1,12 @@
-import { IRCBot } from '.'
-import { IEventContext, ISaslAuthenticator, SaslState } from '../types/irc'
+import { IEventContext, IIRCBot, ISaslAuthenticator, SaslState } from '../types/irc'
 
 export class SaslAuthenticator implements ISaslAuthenticator {
-  constructor(private bot: IRCBot, private onSuccess: Function, private state: SaslState = 'idle') {}
+  constructor(
+    private bot: IIRCBot,
+    private onSuccess: () => void,
+    private onFailure: () => void,
+    private state: SaslState = 'idle'
+  ) {}
 
   handle = () => {
     this.bot.addEventListener('CAP', this.handleCap)
@@ -11,8 +15,6 @@ export class SaslAuthenticator implements ISaslAuthenticator {
 
     this.state = 'requested'
     this.bot.send('CAP REQ :sasl')
-
-    setInterval(() => (this.state = 'idle'), 60000)
   }
 
   private handleCap = (context: IEventContext) => {
@@ -26,7 +28,7 @@ export class SaslAuthenticator implements ISaslAuthenticator {
       this.state = 'authPlain'
       context.send('AUTHENTICATE PLAIN')
     } else {
-      console.error('Authentication failed.')
+      this.onFailure()
     }
   }
 
@@ -43,7 +45,7 @@ export class SaslAuthenticator implements ISaslAuthenticator {
 
       context.send(`AUTHENTICATE ${data}`)
     } else {
-      console.log('Authentication failed.')
+      this.onFailure()
     }
   }
 

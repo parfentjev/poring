@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { ExecutionTimeCalculator } from '../../../src/irc/scheduler'
-import { DateProviderMock } from '../../util/date'
-import { plusMinutes } from '../../../src/util/date'
+import { ExecutionTimeCalculator } from '../../src/irc/scheduler'
+import { plusMinutes } from '../../src/util/date'
+import { DateProviderMock } from '../mocks/util'
 
 describe('Scheduler', () => {
   describe('ExecutionTimeCalculator', () => {

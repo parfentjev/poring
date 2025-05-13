@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Message, parseMessage, Text } from '../../../src/irc/message'
+import { Message, parseMessage, Text } from '../../src/irc/message'
 
 describe('Message', () => {
   describe('Message', () => {
@@ -45,11 +45,11 @@ describe('Message', () => {
     })
 
     it('parseMessage privmsg', () => {
-      const message = parseMessage(':nemo_steel!~Nemo_Stee@user/nemo-iron:80752 PRIVMSG #f1 :Well')
+      const message = parseMessage(':nemo_steel!~Nemo_Stee@user/nemo-iron:80752 PRIVMSG #f1 :Well extra text')
       expect(message.prefix).to.be.equal(':nemo_steel!~Nemo_Stee@user/nemo-iron:80752')
       expect(message.command).to.be.equal('PRIVMSG')
       expect(message.params).to.deep.equal(['#f1'])
-      expect(message.text.value).to.be.equal('Well')
+      expect(message.text.value).to.be.equal('Well extra text')
     })
   })
 })

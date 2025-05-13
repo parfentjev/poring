@@ -3,8 +3,7 @@ import { IConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/confi
 import { IEventHandler, IIRCBot, IScheduleHandler, IScheduler } from '../types/irc'
 import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
-import { CronJob } from 'cron'
-import { IStorage, IStorageTimer } from '../types/storage'
+import { IStorage } from '../types/storage'
 import { Scheduler } from './scheduler'
 
 export class IRCBot implements IIRCBot {
@@ -25,9 +24,14 @@ export class IRCBot implements IIRCBot {
     this.socket.on('data', (data) => this.read(data))
     this.socket.on('end', () => this.connect())
 
-    if (this.config.sasl.enabled) new SaslAuthenticator(this, this.joinChannels).handle()
+    if (this.config.sasl.enabled)
+      new SaslAuthenticator(this, this.joinChannels, () => {
+        throw new Error('SASL auth failed')
+      }).handle()
+
     this.send(`NICK ${this.config.server.nickname}`)
     this.send('USER poring 0 * :https://codeberg.org/parfentjev/poring')
+
     if (!this.config.sasl.enabled) this.joinChannels()
   }
 
