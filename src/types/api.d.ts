@@ -4,14 +4,14 @@ export interface IRaweCeekApiClient {
    *
    * @returns {Promise<SessionsNextResponse | null>} A promise that resolves to the next sessions data or null.
    */
-  sessionsNext: () => Promise<SessionsNextResponse | null>
+  sessionsNext: (series: string) => Promise<SessionsNextResponse | null>
 
   /**
    * Fetches the countdown information for sessions from raweceek.su.
    *
    * @returns {Promise<SessionsCountdownResponse | null>} A promise that resolves to the sessions countdown data or null.
    */
-  sessionsCountdown: () => Promise<SessionsCountdownResponse | null>
+  sessionsCountdown: (series: string) => Promise<SessionsCountdownResponse | null>
 }
 
 export type SessionsNextResponse = RaweCeekSesson
@@ -27,6 +27,7 @@ export interface RaweCeekSesson {
   location: string
   startTime: string
   timeUntil: string
+  series: string
 }
 
 export interface RaweCeekCountdown {

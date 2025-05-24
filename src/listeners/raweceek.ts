@@ -14,7 +14,7 @@ export const handleCeeks = (context: IEventContext) => {
   const unit = commandUnitMap.get(context.message.text.command())
   if (!unit) return
 
-  raweceekClient.sessionsCountdown().then((response) => {
+  raweceekClient.sessionsCountdown('f1').then((response) => {
     if (!response) return
 
     response.countdowns
@@ -32,9 +32,22 @@ export const handleCeeks = (context: IEventContext) => {
 export const handleCountdown = (context: IEventContext) => {
   if (!context.message.isChannel()) return
 
-  if (context.message.text.command() !== '!!n') return
+  let series: string
+  switch (context.message.text.command()) {
+    case '!!n':
+      series = 'f1'
+      break
+    case '!indy':
+      series = 'indycar'
+      break
+    case '!moto':
+      series = 'motogp'
+      break
+    default:
+      return
+  }
 
-  raweceekClient.sessionsNext().then((response) => {
+  raweceekClient.sessionsNext(series).then((response) => {
     if (!response) return
 
     const text = `\x02${response.summary}\x02 begins in ${response.timeUntil} at ${response.startTime}`

@@ -11,12 +11,12 @@ class RaweCeekApiClient implements IRaweCeekApiClient {
       .catch(() => null)
   }
 
-  sessionsNext = async () => {
-    return this.call<SessionsNextResponse>('/sessions/next')
+  sessionsNext = async (series: string) => {
+    return this.call<SessionsNextResponse>(`/sessions/next?series=${series}`)
   }
 
-  sessionsCountdown = async () => {
-    return this.call<SessionsCountdownResponse>('/sessions/countdown')
+  sessionsCountdown = async (series: string) => {
+    return this.call<SessionsCountdownResponse>(`/sessions/countdown?series=${series}`)
   }
 }
 
