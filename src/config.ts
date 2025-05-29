@@ -1,8 +1,9 @@
 import dotenv from 'dotenv'
-import { IConfig, IHandlerConfig, ISaslConfig, IServerConfig, IStorageConfig } from './types/config'
+import { IConfig, IHandlerConfig, ISaslConfig, IScriptsConfig, IServerConfig, IStorageConfig } from './types/config'
 
 export class Config implements IConfig {
   server: IServerConfig
+  scripts: IScriptsConfig
   storage: IStorageConfig
   sasl: ISaslConfig
   handler: IHandlerConfig
@@ -15,6 +16,10 @@ export class Config implements IConfig {
       port: +process.env.SERVER_PORT!,
       nickname: process.env.SERVER_NICKNAME!,
       channels: process.env.SERVER_CHANNELS!.split(','),
+    }
+
+    this.scripts = {
+      scriptsDirectory: process.env.SCRIPTS_DIRECTORY!,
     }
 
     this.storage = {

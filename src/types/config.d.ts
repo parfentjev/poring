@@ -1,5 +1,6 @@
 export interface IConfig {
   server: IServerConfig
+  scripts: IScriptsConfig
   storage: IStorageConfig
   sasl: ISaslConfig
   handler: IHandlerConfig
@@ -10,6 +11,10 @@ export interface IServerConfig {
   port: number
   nickname: string
   channels: string[]
+}
+
+export interface IScriptsConfig {
+  scriptsDirectory: string
 }
 
 export interface IStorageConfig {

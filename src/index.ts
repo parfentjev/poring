@@ -1,5 +1,4 @@
 import { Config } from './config'
-import { addListeners } from './listeners'
 import { IRCBot } from './irc'
 import { Storage } from './storage'
 
@@ -11,7 +10,6 @@ const main = async () => {
 
   const bot = new IRCBot(config, storage)
   bot.connect()
-  addListeners(config, bot)
 }
 
 main().catch((error) => {

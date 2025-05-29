@@ -5,6 +5,7 @@ import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
 import { IStorage } from '../types/storage'
 import { Scheduler } from './scheduler'
+import { ScriptManager } from './scripts'
 
 export class IRCBot implements IIRCBot {
   constructor(
@@ -12,8 +13,11 @@ export class IRCBot implements IIRCBot {
     private storage: IStorage,
     private socket: TLSSocket | null = null,
     private handlers = new Map<string, IEventHandler[]>(),
-    private scheduler: IScheduler = new Scheduler(this.send, config, storage)
-  ) {}
+    private scheduler: IScheduler = new Scheduler(this.send, config, storage),
+    private scriptManager: ScriptManager | null = null
+  ) {
+    this.scriptManager = new ScriptManager(this, config.scripts.scriptsDirectory)
+  }
 
   connect = () => {
     this.socket = tlsConnect({
