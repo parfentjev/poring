@@ -1,12 +1,11 @@
 import dotenv from 'dotenv'
-import { IConfig, IHandlerConfig, ISaslConfig, IScriptsConfig, IServerConfig, IStorageConfig } from './types/config'
+import { IBotConfig as IIRCBotConfig, ISaslConfig, IScriptsConfig, IServerConfig, IStorageConfig } from './types/config'
 
-export class Config implements IConfig {
+export class IRCBotConfig implements IIRCBotConfig {
   server: IServerConfig
   scripts: IScriptsConfig
   storage: IStorageConfig
   sasl: ISaslConfig
-  handler: IHandlerConfig
 
   constructor() {
     dotenv.config()
@@ -33,19 +32,6 @@ export class Config implements IConfig {
       enabled: process.env.SASL_ENABLED! === '1' ? true : false,
       username: process.env.SASL_USERNAME!,
       password: process.env.SASL_PASSWORD!,
-    }
-
-    this.handler = {
-      next: {
-        cron: process.env.HANDLER_NEXT_CRON!,
-        channel: process.env.HANDLER_NEXT_CHANNEL!,
-      },
-      poring: {
-        id: process.env.HANDLER_PORING_ID!,
-        timerRangeStart: +process.env.HANDLER_PORING_TIMER_RANGE_START!,
-        timerRangeEnd: +process.env.HANDLER_PORING_TIMER_RANGE_END!,
-        channel: process.env.HANDLER_PORING_CHANNEL!,
-      },
     }
   }
 }

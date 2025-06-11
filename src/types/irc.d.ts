@@ -1,4 +1,4 @@
-import { IConfig, ICronHandlerConfig } from './config'
+import { IBotConfig, ICronHandlerConfig, ITimerHandlerConfig } from './config'
 import { IStorage, IStorageTimer } from './storage'
 
 export interface IIRCBot {
@@ -21,20 +21,9 @@ export interface IIRCBot {
   addEventListener: (event: string, handler: IEventHandler) => void
 
   /**
-   * Schedules a cron job with the specified handler and configuration.
-   *
-   * @param {IScheduleHandler} handler - Function to execute for the cron job.
-   * @param {ICronHandlerConfig} config - Configuration settings for the cron job.
+   * Clears existing event handlers.
    */
-  addCronJob: (handler: IScheduleHandler, config: ICronHandlerConfig) => void
-
-  /**
-   * Schedules a timer job with the specified handler and configuration.
-   *
-   * @param {IScheduleHandler} handler - Function to execute for the timer job.
-   * @param {ITimerHandlerConfig} config - Configuration settings for the timer job.
-   */
-  addTimerJob: (handler: IScheduleHandler, config: ITimerHandlerConfig) => void
+  clearEventListeners: () => void
 }
 
 /**
@@ -72,7 +61,7 @@ export interface IText {
 export interface IEventContext {
   send: SendFunction
   message: IMessage
-  config: IConfig
+  config: IBotConfig
   storage: IStorage
 }
 
@@ -82,7 +71,7 @@ export interface IEventHandler {
 
 export interface IScheduleContext {
   send: SendFunction
-  config: IConfig
+  config: IBotConfig
   storage: IStorage
 }
 
@@ -109,12 +98,22 @@ export interface IScheduler {
   addCronJob: (handler: IScheduleHandler, config: ICronHandlerConfig) => void
 
   /**
+   * Cancels existing jobs.
+   */
+  clearCronJobs: () => void
+
+  /**
    * Creates a new timer job.
    *
    * @param {IScheduleHandler} handler - Function to execute for the timer job.
    * @param {ITimerHandlerConfig} config - Configuration settings for the timer job.
    */
   addTimerJob: (handler: IScheduleHandler, config: ITimerHandlerConfig) => void
+
+  /**
+   * Cancels existing jobs.
+   */
+  clearTimerJobs: () => void
 }
 
 export interface IExecutionTimeCalculator {
@@ -136,3 +135,20 @@ export interface IExecutionTimeCalculator {
    */
   fromDate: (existingDate: Date, delay: number) => Date
 }
+
+export interface IScriptManager {}
+
+export interface IScript {
+  config: IScriptConfig
+  eventHandler?: IEventHandler
+  scheduleHandler?: IScheduleHandler
+}
+
+export interface IScriptConfig {
+  type: ScriptType
+  event?: string
+  cron?: ICronHandlerConfig
+  timer?: ITimerHandlerConfig
+}
+
+export type ScriptType = 'eventHandler' | 'cronJob' | 'timerJob'

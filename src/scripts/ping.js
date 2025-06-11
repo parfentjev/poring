@@ -1,5 +1,8 @@
-export const event = 'PING'
+export const config = {
+  type: 'eventHandler',
+  event: 'PING'
+}
 
-export const handler = (context) => {
+export const eventHandler = (context) => {
   context.send(`PONG :${context.message.text.value}`)
 }

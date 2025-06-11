@@ -1,6 +1,9 @@
 import { raweceekClient } from './api/raweceek-client.js'
 
-export const event = 'PRIVMSG'
+export const config = {
+  type: 'eventHandler',
+  event: 'PRIVMSG'
+}
 
 const commandUnitMap = new Map([
   ['!ceeks', 'ceeks'],
@@ -9,13 +12,11 @@ const commandUnitMap = new Map([
   ['!blinks', 'eye blinks'],
 ])
 
-export const handler = async (context) => {
+export const eventHandler = async (context) => {
   if (!context.message.isChannel()) return
 
   const unit = commandUnitMap.get(context.message.text.command())
   if (!unit) return
-
-  //const {raweceekClient} = await import()
 
   raweceekClient.sessionsCountdown('f1').then((response) => {
     if (!response) return
@@ -23,9 +24,8 @@ export const handler = async (context) => {
     response.countdowns
       .filter((countdown) => countdown.unit === unit)
       .forEach((countdown) => {
-        const text = `\x02${response.session.summary}\x02 begins in ${countdown.value.toFixed(2)} ${
-          countdown.unit
-        } at ${response.session.startTime}`
+        const value = countdown.value.toFixed(2)
+        const text = `\x02${response.session.summary}\x02 begins in ${value} ${countdown.unit} at ${response.session.startTime}`
 
         context.send(`PRIVMSG ${context.message.params[0]} :${text} 🎉`)
       })

@@ -1,9 +1,9 @@
-import { Config } from './config'
+import { IRCBotConfig } from './config'
 import { IRCBot } from './irc'
 import { Storage } from './storage'
 
 const main = async () => {
-  const config = new Config()
+  const config = new IRCBotConfig()
 
   const storage = new Storage(config.storage)
   await storage.connect()

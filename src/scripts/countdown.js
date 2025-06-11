@@ -1,8 +1,11 @@
 import { raweceekClient } from './api/raweceek-client.js'
 
-export const event = 'PRIVMSG'
+export const config = {
+  type: 'eventHandler',
+  event: 'PRIVMSG'
+}
 
-export const handler = (context) => {
+export const eventHandler = (context) => {
   if (!context.message.isChannel()) return
 
   let series

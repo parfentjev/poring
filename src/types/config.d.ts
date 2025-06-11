@@ -1,9 +1,8 @@
-export interface IConfig {
+export interface IBotConfig {
   server: IServerConfig
   scripts: IScriptsConfig
   storage: IStorageConfig
   sasl: ISaslConfig
-  handler: IHandlerConfig
 }
 
 export interface IServerConfig {
@@ -36,13 +35,11 @@ export interface IHandlerConfig {
 }
 
 export interface ICronHandlerConfig {
-  cron: string
-  channel: string
+  expression: string
 }
 
 export interface ITimerHandlerConfig {
   id: string
   timerRangeStart: number
   timerRangeEnd: number
-  channel: string
 }
