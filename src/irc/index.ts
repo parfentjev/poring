@@ -1,19 +1,23 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
-import { IConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
-import { IEventHandler, IIRCBot, IScheduleHandler, IScheduler } from '../types/irc'
+import { IBotConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
+import { IEventHandler, IIRCBot, IScheduleHandler, IScheduler, IScriptManager } from '../types/irc'
 import { SaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
 import { IStorage } from '../types/storage'
 import { Scheduler } from './scheduler'
+import { ScriptManager } from './script'
 
 export class IRCBot implements IIRCBot {
   constructor(
-    private config: IConfig,
+    private config: IBotConfig,
     private storage: IStorage,
     private socket: TLSSocket | null = null,
     private handlers = new Map<string, IEventHandler[]>(),
-    private scheduler: IScheduler = new Scheduler(this.send, config, storage)
-  ) {}
+    private scheduler: IScheduler = new Scheduler(this.send, config, storage),
+    private scriptManager: IScriptManager
+  ) {
+    this.scriptManager = new ScriptManager(config.scripts.scriptsDirectory, this, this.scheduler)
+  }
 
   connect = () => {
     this.socket = tlsConnect({
@@ -48,12 +52,8 @@ export class IRCBot implements IIRCBot {
     this.handlers.set(event, commandHandlers)
   }
 
-  addCronJob = (handler: IScheduleHandler, config: ICronHandlerConfig) => {
-    this.scheduler.addCronJob(handler, config)
-  }
-
-  addTimerJob = (handler: IScheduleHandler, config: ITimerHandlerConfig) => {
-    this.scheduler.addTimerJob(handler, config)
+  clearEventListeners = () => {
+    this.handlers.clear()
   }
 
   private read = (data: Buffer) => {
