@@ -29,7 +29,7 @@ Once it's running:
 
 ## Bot
 
-Ccopy `example.env` to `.env` and modify it to your liking.
+Copy `example.env` to `.env` and modify it to your liking.
 
 Then you have two options how to run the bot:
 
