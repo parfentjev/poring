@@ -1,7 +1,9 @@
 export const config = {
-  type: 'cronJob',
-  cron: {
-    expression: '*/5 * * * *',
+  type: 'timerJob',
+  timer: {
+    id: 'random-actions',
+    timerRangeStart: 1,
+    timerRangeEnd: 5,
   },
 }
 

@@ -14,7 +14,7 @@ export class IRCBot implements IIRCBot {
     private socket: TLSSocket | null = null,
     private handlers = new Map<string, IEventHandler[]>(),
     private scheduler: IScheduler = new Scheduler(this.send, config, storage),
-    private scriptManager: IScriptManager
+    private scriptManager: IScriptManager | null = null
   ) {
     this.scriptManager = new ScriptManager(config.scripts.scriptsDirectory, this, this.scheduler)
   }

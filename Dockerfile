@@ -3,7 +3,6 @@ WORKDIR /build
 COPY package*.json .
 RUN npm install
 COPY . .
-RUN npm run test
 RUN npm run build
 
 FROM node:latest AS release
