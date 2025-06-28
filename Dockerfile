@@ -11,4 +11,4 @@ COPY --from=build /build/dist ./dist
 COPY --from=build /build/package*.json ./
 RUN npm install --omit=dev
 
-CMD ["node", "./dist/src/index.js"]
+CMD ["node", "./dist/index.js"]

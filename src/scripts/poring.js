@@ -3,7 +3,7 @@ export const config = {
   timer: {
     id: 'random-actions',
     timerRangeStart: 1,
-    timerRangeEnd: 5,
+    timerRangeEnd: 10,
   },
 }
 
