@@ -8,7 +8,7 @@ const main = async () => {
   const storage = new MariaDBStorage(config.storage)
   await storage.connect()
 
-  const bot = new PoringIRCBot(config, storage)
+  const bot = PoringIRCBot.create(config, storage)
   bot.connect()
 }
 

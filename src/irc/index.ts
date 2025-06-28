@@ -8,15 +8,33 @@ import { JobScheduler } from './scheduler'
 import { LiveScriptManager } from './script'
 
 export class PoringIRCBot implements IRCBot {
-  constructor(
-    private config: Config,
-    private storage: Storage,
-    private socket: TLSSocket | null = null,
-    private handlers = new Map<string, EventHandler[]>(),
-    private scheduler: Scheduler = new JobScheduler(this.send, config, storage),
-    private scriptManager: ScriptManager | null = null
-  ) {
-    this.scriptManager = new LiveScriptManager(config.scripts.scriptsDirectory, this, this.scheduler)
+  private socket: TLSSocket | undefined
+  private handlers: Map<string, EventHandler[]> | undefined
+  private scheduler: Scheduler | undefined
+
+  private constructor(private config: Config, private storage: Storage) {}
+
+  static create(config: Config, storage: Storage) {
+    const bot = new PoringIRCBot(config, storage)
+    bot.handlers = new Map<string, EventHandler[]>()
+    bot.scheduler = new JobScheduler(bot.send, config, storage)
+    new LiveScriptManager(config.scripts.scriptsDirectory, bot, bot.scheduler)
+
+    return bot
+  }
+
+  static createWithDependencies = (dependencies: {
+    config: Config
+    storage: Storage
+    handlers: Map<string, EventHandler[]>
+    scheduler: Scheduler
+    scriptManager: ScriptManager
+  }) => {
+    const bot = new PoringIRCBot(dependencies.config, dependencies.storage)
+    bot.handlers = dependencies.handlers
+    bot.scheduler = dependencies.scheduler
+
+    return bot
   }
 
   connect = () => {
@@ -47,13 +65,13 @@ export class PoringIRCBot implements IRCBot {
   }
 
   addEventListener = (event: string, handler: EventHandler) => {
-    const commandHandlers = this.handlers.get(event) ?? []
+    const commandHandlers = this.handlers?.get(event) ?? []
     commandHandlers.push(handler)
-    this.handlers.set(event, commandHandlers)
+    this.handlers?.set(event, commandHandlers)
   }
 
   clearEventListeners = () => {
-    this.handlers.clear()
+    this.handlers?.clear()
   }
 
   private read = (data: Buffer) => {
@@ -65,7 +83,7 @@ export class PoringIRCBot implements IRCBot {
         console.log(`=> ${raw}`)
 
         const message = parseMessage(raw)
-        this.handlers.get(message.command)?.forEach((handler) => {
+        this.handlers?.get(message.command)?.forEach((handler) => {
           handler({
             send: this.send,
             message,
