@@ -1,4 +1,4 @@
-export interface IDateProvider {
+export interface DateProvider {
   /**
    * Returns the current date and time.
    *

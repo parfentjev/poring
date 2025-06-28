@@ -1,11 +1,11 @@
 import dotenv from 'dotenv'
-import { IBotConfig as IIRCBotConfig, ISaslConfig, IScriptsConfig, IServerConfig, IStorageConfig } from './types/config'
+import { Config, SaslConfig, ScriptManagerConfig, ServerConfig, StorageConfig } from './types/config'
 
-export class IRCBotConfig implements IIRCBotConfig {
-  server: IServerConfig
-  scripts: IScriptsConfig
-  storage: IStorageConfig
-  sasl: ISaslConfig
+export class PoringConfig implements Config {
+  server: ServerConfig
+  scripts: ScriptManagerConfig
+  storage: StorageConfig
+  sasl: SaslConfig
 
   constructor() {
     dotenv.config()

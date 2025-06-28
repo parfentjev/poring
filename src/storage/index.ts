@@ -1,9 +1,9 @@
-import { IStorageConfig } from '../types/config'
+import { StorageConfig } from '../types/config'
 import mariadb from 'mariadb'
-import { IStorage, IStorageMessage, IStorageTimer, QueryData } from '../types/storage'
+import { Storage, StorageMessage, StorageTimer, QueryData } from '../types/storage'
 
-export class Storage implements IStorage {
-  constructor(private config: IStorageConfig, private conn: mariadb.Connection | null = null) {}
+export class MariaDBStorage implements Storage {
+  constructor(private config: StorageConfig, private conn: mariadb.Connection | null = null) {}
 
   connect = async () => {
     this.conn = await mariadb.createConnection({
@@ -42,7 +42,7 @@ export class Storage implements IStorage {
     }
   }
 
-  getRandomMessage = async (category: string): QueryData<IStorageMessage> => {
+  getRandomMessage = async (category: string): QueryData<StorageMessage> => {
     const data = await this.execute(
       `
       SELECT id, text 
@@ -87,7 +87,7 @@ export class Storage implements IStorage {
     )
   }
 
-  getTimer = async (id: string): QueryData<IStorageTimer> => {
+  getTimer = async (id: string): QueryData<StorageTimer> => {
     const data = await this.execute(
       `
       SELECT id, execute_at, executed

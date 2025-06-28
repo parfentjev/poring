@@ -1,44 +1,39 @@
-export interface IBotConfig {
-  server: IServerConfig
-  scripts: IScriptsConfig
-  storage: IStorageConfig
-  sasl: ISaslConfig
+export interface Config {
+  server: ServerConfig
+  scripts: ScriptManagerConfig
+  storage: StorageConfig
+  sasl: SaslConfig
 }
 
-export interface IServerConfig {
+export interface ServerConfig {
   host: string
   port: number
   nickname: string
   channels: string[]
 }
 
-export interface IScriptsConfig {
+export interface ScriptManagerConfig {
   scriptsDirectory: string
 }
 
-export interface IStorageConfig {
+export interface StorageConfig {
   host: string
   database: string
   user: string
   password: string
 }
 
-export interface ISaslConfig {
+export interface SaslConfig {
   enabled: boolean
   username: string
   password: string
 }
 
-export interface IHandlerConfig {
-  next: ICronHandlerConfig
-  poring: ITimerHandlerConfig
-}
-
-export interface ICronHandlerConfig {
+export interface CronHandlerConfig {
   expression: string
 }
 
-export interface ITimerHandlerConfig {
+export interface TimerHandlerConfig {
   id: string
   timerRangeStart: number
   timerRangeEnd: number

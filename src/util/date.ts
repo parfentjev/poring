@@ -1,6 +1,6 @@
-import { IDateProvider } from '../types/date'
+import { DateProvider } from '../types/date'
 
-export class DateProvider implements IDateProvider {
+export class DefaultDateProvider implements DateProvider {
   now = () => {
     return new Date()
   }

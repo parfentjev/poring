@@ -1,13 +1,13 @@
 import path from 'path'
-import { IIRCBot, IScheduler, IScriptManager } from '../types/irc'
+import { IRCBot, Scheduler, ScriptManager } from '../types/irc'
 import { readdirSync, watch } from 'fs'
-import { IScript } from '../types/irc'
-import { ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
+import { Script } from '../types/irc'
+import { CronHandlerConfig, TimerHandlerConfig } from '../types/config'
 
-export class ScriptManager implements IScriptManager {
+export class LiveScriptManager implements ScriptManager {
   private fsWatchTimeout?: NodeJS.Timeout
 
-  constructor(private scriptsDirectory: string, private bot: IIRCBot, private scheduler: IScheduler) {
+  constructor(private scriptsDirectory: string, private bot: IRCBot, private scheduler: Scheduler) {
     this.loadScriptsFromDisk()
 
     watch(this.scriptsDirectory, () => {
@@ -34,14 +34,14 @@ export class ScriptManager implements IScriptManager {
 
     try {
       delete require.cache[absolutePath]
-      const module: IScript = require(absolutePath)
+      const module: Script = require(absolutePath)
 
       if (module.config.type === 'eventHandler' && module.config.event && module.eventHandler) {
         this.bot.addEventListener(module.config.event, module.eventHandler)
       } else if (module.config.type === 'cronJob' && module.scheduleHandler && module.config.cron) {
-        this.scheduler.addCronJob(module.scheduleHandler, module.config.cron as ICronHandlerConfig)
+        this.scheduler.addCronJob(module.scheduleHandler, module.config.cron as CronHandlerConfig)
       } else if (module.config.type === 'timerJob' && module.scheduleHandler && module.config.timer) {
-        this.scheduler.addTimerJob(module.scheduleHandler, module.config.timer as ITimerHandlerConfig)
+        this.scheduler.addTimerJob(module.scheduleHandler, module.config.timer as TimerHandlerConfig)
       } else {
         console.error('Invalid script', absolutePath)
 

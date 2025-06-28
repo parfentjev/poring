@@ -1,4 +1,4 @@
-export interface IRaweCeekApiClient {
+export interface RaweCeekApiClient {
   /**
    * Fetches the next sessions from raweceek.eu.
    *

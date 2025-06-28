@@ -1,22 +1,22 @@
 import { connect as tlsConnect, TLSSocket } from 'tls'
-import { IBotConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
-import { IEventHandler, IIRCBot, IScheduleHandler, IScheduler, IScriptManager } from '../types/irc'
-import { SaslAuthenticator } from './sasl'
+import { Config } from '../types/config'
+import { EventHandler, IRCBot, Scheduler, ScriptManager } from '../types/irc'
+import { DefaultSaslAuthenticator } from './sasl'
 import { parseMessage } from './message'
-import { IStorage } from '../types/storage'
-import { Scheduler } from './scheduler'
-import { ScriptManager } from './script'
+import { Storage } from '../types/storage'
+import { JobScheduler } from './scheduler'
+import { LiveScriptManager } from './script'
 
-export class IRCBot implements IIRCBot {
+export class PoringIRCBot implements IRCBot {
   constructor(
-    private config: IBotConfig,
-    private storage: IStorage,
+    private config: Config,
+    private storage: Storage,
     private socket: TLSSocket | null = null,
-    private handlers = new Map<string, IEventHandler[]>(),
-    private scheduler: IScheduler = new Scheduler(this.send, config, storage),
-    private scriptManager: IScriptManager | null = null
+    private handlers = new Map<string, EventHandler[]>(),
+    private scheduler: Scheduler = new JobScheduler(this.send, config, storage),
+    private scriptManager: ScriptManager | null = null
   ) {
-    this.scriptManager = new ScriptManager(config.scripts.scriptsDirectory, this, this.scheduler)
+    this.scriptManager = new LiveScriptManager(config.scripts.scriptsDirectory, this, this.scheduler)
   }
 
   connect = () => {
@@ -29,7 +29,7 @@ export class IRCBot implements IIRCBot {
     this.socket.on('end', () => this.connect())
 
     if (this.config.sasl.enabled)
-      new SaslAuthenticator(this, this.joinChannels, () => {
+      new DefaultSaslAuthenticator(this, this.joinChannels, () => {
         throw new Error('SASL auth failed')
       }).handle()
 
@@ -46,7 +46,7 @@ export class IRCBot implements IIRCBot {
     this.socket.write(`${message}\r\n`)
   }
 
-  addEventListener = (event: string, handler: IEventHandler) => {
+  addEventListener = (event: string, handler: EventHandler) => {
     const commandHandlers = this.handlers.get(event) ?? []
     commandHandlers.push(handler)
     this.handlers.set(event, commandHandlers)

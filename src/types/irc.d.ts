@@ -1,7 +1,7 @@
-import { IBotConfig, ICronHandlerConfig, ITimerHandlerConfig } from './config'
-import { IStorage, IStorageTimer } from './storage'
+import { Config, CronHandlerConfig, TimerHandlerConfig } from './config'
+import { Storage, StorageTimer } from './storage'
 
-export interface IIRCBot {
+export interface IRCBot {
   /**
    * Establishes a connection to the IRC server.
    */
@@ -16,9 +16,9 @@ export interface IIRCBot {
    * Registers an event listener for a specific event.
    *
    * @param {string} event - The name of the event to listen for, e.g. PRIVMSG.
-   * @param {IEventHandler} handler - The handler function to execute when the event occurs.
+   * @param {EventHandler} handler - The handler function to execute when the event occurs.
    */
-  addEventListener: (event: string, handler: IEventHandler) => void
+  addEventListener: (event: string, handler: EventHandler) => void
 
   /**
    * Clears existing event handlers.
@@ -33,11 +33,11 @@ export interface IIRCBot {
  */
 type SendFunction = (string: string) => void
 
-export interface IMessage {
+export interface Message {
   prefix: string
   command: string
   params: string[]
-  text: IText
+  text: Text
 
   /**
    * Determines if the message was sent to a channel.
@@ -47,7 +47,7 @@ export interface IMessage {
   isChannel(): boolean
 }
 
-export interface IText {
+export interface Text {
   value: string
 
   /**
@@ -58,44 +58,44 @@ export interface IText {
   command(): string
 }
 
-export interface IEventContext {
+export interface EventContext {
   send: SendFunction
-  message: IMessage
-  config: IBotConfig
-  storage: IStorage
+  message: Message
+  config: Config
+  storage: Storage
 }
 
-export interface IEventHandler {
-  (context: IEventContext): void
+export interface EventHandler {
+  (context: EventContext): void
 }
 
-export interface IScheduleContext {
+export interface ScheduleContext {
   send: SendFunction
-  config: IBotConfig
-  storage: IStorage
+  config: Config
+  storage: Storage
 }
 
-export interface IScheduleHandler {
-  (context: IScheduleContext): void
+export interface ScheduleHandler {
+  (context: ScheduleContext): void
 }
 
 export type SaslState = 'idle' | 'requested' | 'authPlain' | 'authPassword'
 
-export interface ISaslAuthenticator {
+export interface SaslAuthenticator {
   /**
    * Manages and executes the SASL authentication flow.
    */
   handle: () => void
 }
 
-export interface IScheduler {
+export interface Scheduler {
   /**
    * Creates a new cron job.
    *
-   * @param {IScheduleHandler} handler - Function to execute for the cron job.
-   * @param {ICronHandlerConfig} config - Configuration settings for the cron job.
+   * @param {ScheduleHandler} handler - Function to execute for the cron job.
+   * @param {CronHandlerConfig} config - Configuration settings for the cron job.
    */
-  addCronJob: (handler: IScheduleHandler, config: ICronHandlerConfig) => void
+  addCronJob: (handler: ScheduleHandler, config: CronHandlerConfig) => void
 
   /**
    * Cancels existing jobs.
@@ -105,10 +105,10 @@ export interface IScheduler {
   /**
    * Creates a new timer job.
    *
-   * @param {IScheduleHandler} handler - Function to execute for the timer job.
-   * @param {ITimerHandlerConfig} config - Configuration settings for the timer job.
+   * @param {ScheduleHandler} handler - Function to execute for the timer job.
+   * @param {TimerHandlerConfig} config - Configuration settings for the timer job.
    */
-  addTimerJob: (handler: IScheduleHandler, config: ITimerHandlerConfig) => void
+  addTimerJob: (handler: ScheduleHandler, config: TimerHandlerConfig) => void
 
   /**
    * Cancels existing jobs.
@@ -116,7 +116,7 @@ export interface IScheduler {
   clearTimerJobs: () => void
 }
 
-export interface IExecutionTimeCalculator {
+export interface ExecutionTimeCalculator {
   /**
    * Generates a random time within a specified range.
    *
@@ -136,19 +136,19 @@ export interface IExecutionTimeCalculator {
   fromDate: (existingDate: Date, delay: number) => Date
 }
 
-export interface IScriptManager {}
+export interface ScriptManager {}
 
-export interface IScript {
-  config: IScriptConfig
-  eventHandler?: IEventHandler
-  scheduleHandler?: IScheduleHandler
+export interface Script {
+  config: ScriptConfig
+  eventHandler?: EventHandler
+  scheduleHandler?: ScheduleHandler
 }
 
-export interface IScriptConfig {
+export interface ScriptConfig {
   type: ScriptType
   event?: string
-  cron?: ICronHandlerConfig
-  timer?: ITimerHandlerConfig
+  cron?: CronHandlerConfig
+  timer?: TimerHandlerConfig
 }
 
 export type ScriptType = 'eventHandler' | 'cronJob' | 'timerJob'

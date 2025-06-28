@@ -1,14 +1,14 @@
-import { IRCBotConfig } from './config'
-import { IRCBot } from './irc'
-import { Storage } from './storage'
+import { PoringConfig } from './config'
+import { PoringIRCBot } from './irc'
+import { MariaDBStorage } from './storage'
 
 const main = async () => {
-  const config = new IRCBotConfig()
+  const config = new PoringConfig()
 
-  const storage = new Storage(config.storage)
+  const storage = new MariaDBStorage(config.storage)
   await storage.connect()
 
-  const bot = new IRCBot(config, storage)
+  const bot = new PoringIRCBot(config, storage)
   bot.connect()
 }
 

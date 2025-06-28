@@ -1,11 +1,11 @@
 import { CronJob } from 'cron'
-import { IBotConfig, ICronHandlerConfig, ITimerHandlerConfig } from '../types/config'
-import { IExecutionTimeCalculator, IScheduleHandler, IScheduler, SendFunction } from '../types/irc'
-import { IStorage } from '../types/storage'
-import { DateProvider, plusMinutes } from '../util/date'
+import { Config, CronHandlerConfig, TimerHandlerConfig } from '../types/config'
+import { ExecutionTimeCalculator, ScheduleHandler, Scheduler, SendFunction } from '../types/irc'
+import { Storage } from '../types/storage'
+import { DefaultDateProvider, plusMinutes } from '../util/date'
 
-export class ExecutionTimeCalculator implements IExecutionTimeCalculator {
-  constructor(private dateProvider = new DateProvider()) {}
+export class RandomExecutionTimeCalculator implements ExecutionTimeCalculator {
+  constructor(private dateProvider = new DefaultDateProvider()) {}
 
   randomTime = (start: number, end: number) => {
     const randomDelay = start + Math.floor(Math.random() * (end - start))
@@ -21,18 +21,18 @@ export class ExecutionTimeCalculator implements IExecutionTimeCalculator {
   }
 }
 
-export class Scheduler implements IScheduler {
+export class JobScheduler implements Scheduler {
   private cronJobs: CronJob[] = []
   private timerJobs: NodeJS.Timeout[] = []
 
   constructor(
     private send: SendFunction,
-    private config: IBotConfig,
-    private storage: IStorage,
-    private timeCalculator: IExecutionTimeCalculator = new ExecutionTimeCalculator()
+    private config: Config,
+    private storage: Storage,
+    private timeCalculator: ExecutionTimeCalculator = new RandomExecutionTimeCalculator()
   ) {}
 
-  addCronJob = (handler: IScheduleHandler, config: ICronHandlerConfig) => {
+  addCronJob = (handler: ScheduleHandler, config: CronHandlerConfig) => {
     const job = new CronJob(
       config.expression,
       () => {
@@ -46,7 +46,7 @@ export class Scheduler implements IScheduler {
     this.cronJobs.push(job)
   }
 
-  addTimerJob = (handler: IScheduleHandler, config: ITimerHandlerConfig) => {
+  addTimerJob = (handler: ScheduleHandler, config: TimerHandlerConfig) => {
     const run = async () => {
       const timer = await this.storage.getTimer(config.id)
 

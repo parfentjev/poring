@@ -1,7 +1,7 @@
-import { IMessage, IText } from '../types/irc'
+import { Message, Text } from '../types/irc'
 
-export class Message implements IMessage {
-  constructor(public prefix: string, public command: string, public params: string[], public text: IText) {}
+export class DefaultMessage implements Message {
+  constructor(public prefix: string, public command: string, public params: string[], public text: Text) {}
 
   isChannel = () => {
     if (this.params.length === 0) return false
@@ -10,7 +10,7 @@ export class Message implements IMessage {
   }
 }
 
-export class Text implements IText {
+export class DefaultText implements Text {
   constructor(public value: string) {}
 
   command = () => {
@@ -21,7 +21,7 @@ export class Text implements IText {
   }
 }
 
-export const parseMessage = (input: string): IMessage => {
+export const parseMessage = (input: string): Message => {
   const message = input.trim().split(' ')
   const params: string[] = []
 
@@ -47,5 +47,5 @@ export const parseMessage = (input: string): IMessage => {
     params.push(token)
   }
 
-  return new Message(prefix, command, params, new Text(text))
+  return new DefaultMessage(prefix, command, params, new DefaultText(text))
 }

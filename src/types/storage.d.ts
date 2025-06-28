@@ -1,4 +1,4 @@
-export interface IStorage {
+export interface Storage {
   /**
    * Establishes a connection to the database.
    */
@@ -8,9 +8,9 @@ export interface IStorage {
    * Retrieves a random message from the specified category.
    *
    * @param {string} category - The category from which to retrieve the message.
-   * @returns {QueryData<IStorageMessage>} A query result containing a random message from the specified category.
+   * @returns {QueryData<StorageMessage>} A query result containing a random message from the specified category.
    */
-  getRandomMessage: (category: string) => QueryData<IStorageMessage>
+  getRandomMessage: (category: string) => QueryData<StorageMessage>
 
   /**
    * Increases the usage count of a specific message.
@@ -34,17 +34,17 @@ export interface IStorage {
    * Retrieves a timer by its ID.
    *
    * @param {string} id - The ID of the timer to retrieve.
-   * @returns {QueryData<IStorageTimer>} A query result containing the timer data.
+   * @returns {QueryData<StorageTimer>} A query result containing the timer data.
    */
-  getTimer: (id: string) => QueryData<IStorageTimer>
+  getTimer: (id: string) => QueryData<StorageTimer>
 }
 
-export interface IStorageMessage {
+export interface StorageMessage {
   id: string
   text: string
 }
 
-export interface IStorageTimer {
+export interface StorageTimer {
   id: string
   executeAt: Date
   executed: boolean
