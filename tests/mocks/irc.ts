@@ -1,10 +1,12 @@
 import { TLSSocket } from 'tls'
 import { Config } from '../../src/types/config'
-import { EventHandler, IRCBot, Scheduler } from '../../src/types/irc'
+import { IRCBot } from '../../src/types/irc'
 import { Storage, StorageMessage, StorageTimer, QueryData } from '../../src/types/storage'
-import { parseMessage } from '../../src/irc/message'
+import { PoringIRCBot } from '../../src/irc'
+import { EventEmitter } from 'stream'
+import Sinon from 'sinon'
 
-const dummyConfig: Config = {
+export const dummyConfig: Config = {
   server: {
     host: '',
     port: 0,
@@ -27,7 +29,7 @@ const dummyConfig: Config = {
   },
 }
 
-const dummyStorage: Storage = {
+export const dummyStorage: Storage = {
   connect: function (): void {
     throw new Error('Function not implemented.')
   },
@@ -45,47 +47,44 @@ const dummyStorage: Storage = {
   },
 }
 
-// I can probably use Sinon.js or something like that to mock TLSSocket
-// and use the real IRCBot class instead
-// which would also allow me to test IRCBot itself
-export class IRCBotMock implements IRCBot {
-  public readonly messages: string[] = []
+class TLSSocketMock extends EventEmitter {
+  public messages: string[] = []
 
-  constructor(
-    private config: Config = dummyConfig,
-    private storage: Storage = dummyStorage,
-    private socket: TLSSocket | null = null,
-    private handlers = new Map<string, EventHandler[]>(),
-    private scheduler: Scheduler | null = null
-  ) {}
-
-  connect = () => {
-    throw new Error('Function not implemented.')
+  write(data: string) {
+    this.messages.push(data)
   }
 
-  send = (message: string) => {
-    this.messages.push(message)
-  }
+  destroy = Sinon.stub()
+}
 
-  addEventListener = (event: string, handler: EventHandler) => {
-    const commandHandlers = this.handlers.get(event) ?? []
-    commandHandlers.push(handler)
-    this.handlers.set(event, commandHandlers)
-  }
+export interface BotWithTestDependencies {
+  bot: IRCBot
+  socket: TLSSocket
+  mockMessage: (message: string) => void
+  getMessages: () => string[]
+  cleanUp: () => void
+}
 
-  clearEventListeners = () => {
-    throw new Error('Function not implemented.')
-  }
+export const createBotWithTestDependencies = (): BotWithTestDependencies => {
+  const socket = new TLSSocketMock() as unknown as TLSSocket
 
-  mockMessage = (raw: string) => {
-    const message = parseMessage(raw)
-    this.handlers.get(message.command)?.forEach((handler) => {
-      handler({
-        send: this.send,
-        message,
-        config: this.config,
-        storage: this.storage,
-      })
-    })
+  const bot = PoringIRCBot.createWithDependencies({
+    config: dummyConfig,
+    storage: dummyStorage,
+    socket: socket,
+    handlers: new Map(),
+  })
+
+  const clearMessages = () => ((socket as any).messages = [])
+
+  return {
+    bot,
+    socket,
+    mockMessage: (message: string) => socket.emit('data', Buffer.from(`${message}\r\n`)),
+    getMessages: () => (socket as any).messages,
+    cleanUp: () => {
+      bot.clearEventListeners()
+      clearMessages()
+    },
   }
 }

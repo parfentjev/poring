@@ -8,8 +8,10 @@
     "@types/chai": "^5.2.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.2",
+    "@types/sinon": "^17.0.4",
     "chai": "^5.2.0",
     "mocha": "^11.2.2",
+    "sinon": "^21.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"

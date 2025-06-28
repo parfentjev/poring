@@ -16,7 +16,7 @@ export class PoringIRCBot implements IRCBot {
 
   static create(config: Config, storage: Storage) {
     const bot = new PoringIRCBot(config, storage)
-    bot.handlers = new Map<string, EventHandler[]>()
+    bot.handlers = new Map()
     bot.scheduler = new JobScheduler(bot.send, config, storage)
     new LiveScriptManager(config.scripts.scriptsDirectory, bot, bot.scheduler)
 
@@ -26,11 +26,17 @@ export class PoringIRCBot implements IRCBot {
   static createWithDependencies = (dependencies: {
     config: Config
     storage: Storage
-    handlers: Map<string, EventHandler[]>
-    scheduler: Scheduler
-    scriptManager: ScriptManager
+    socket?: TLSSocket
+    handlers?: Map<string, EventHandler[]>
+    scheduler?: Scheduler
   }) => {
     const bot = new PoringIRCBot(dependencies.config, dependencies.storage)
+
+    if (dependencies.socket) {
+      bot.socket = dependencies.socket
+      bot.socket.on('data', (data) => bot.read(data))
+    }
+
     bot.handlers = dependencies.handlers
     bot.scheduler = dependencies.scheduler
 
