@@ -21,10 +21,10 @@ public class RabbitMqManager {
 
     public void connect() throws RabbitMqManagerConnectionException {
         var factory = new ConnectionFactory();
-        factory.setHost(config.HOST);
-        factory.setPort(config.PORT);
-        factory.setUsername(config.USERNAME);
-        factory.setPassword(config.PASSWORD);
+        factory.setHost(config.getHost());
+        factory.setPort(config.getPort());
+        factory.setUsername(config.getUsername());
+        factory.setPassword(config.getPassword());
 
         try {
             connection = factory.newConnection();
