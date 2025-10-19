@@ -1,4 +1,4 @@
-package ee.fakeplastictrees.poring.shared.rabbitmq.exception;
+package ee.fakeplastictrees.poring.shared.rabbitmq;
 
 public class RabbitMqManagerException extends RuntimeException {
     public RabbitMqManagerException(String message) {

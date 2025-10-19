@@ -1,14 +1,18 @@
 package ee.fakeplastictrees.poring.shared.config;
 
-import java.util.Objects;
-import java.util.Optional;
+import java.lang.reflect.Field;
+import java.text.MessageFormat;
 
 public class Config {
     private static Config instance;
 
+    private final Adapter adapter;
+    private final Worker worker;
     private final RabbitMq rabbitMq;
 
     private Config() {
+        adapter = new Adapter();
+        worker = new Worker();
         rabbitMq = new RabbitMq();
     }
 
@@ -24,25 +28,57 @@ public class Config {
         return rabbitMq;
     }
 
+    public class Adapter {
+        // todo
+    }
+
+    public class Worker {
+        // todo
+    }
+
     public class RabbitMq {
-        public final String HOST;
-        public final Integer PORT;
-        public final String USERNAME;
-        public final String PASSWORD;
+        public final String HOST = getString("RABBITMQ_HOST");
+        public final Integer PORT = getInteger("RABBITMQ_PORT");
+        public final String USERNAME = getString("RABBITMQ_USERNAME");
+        public final String PASSWORD = getString("RABBITMQ_PASSWORD");
 
         RabbitMq() {
-            HOST = System.getenv("RABBITMQ_HOST");
+            validateConfig(this);
+        }
+    }
 
-            var portAsString = Optional.ofNullable(System.getenv("RABBITMQ_PORT")).orElse("5672");
-            PORT = Integer.parseInt(portAsString);
+    protected String getString(String key) {
+        return System.getenv(key);
+    }
 
-            USERNAME = System.getenv("RABBITMQ_USERNAME");
-            PASSWORD = System.getenv("RABBITMQ_PASSWORD");
+    protected Integer getInteger(String key) {
+        var stringValue = System.getenv("RABBITMQ_PORT");
+        if (stringValue == null || stringValue.isBlank()) {
+            return null;
         }
 
-        public boolean isValid() {
-            return Objects.nonNull(HOST) && Objects.nonNull(PORT) && Objects.nonNull(USERNAME)
-                    && Objects.nonNull(PASSWORD);
+        return Integer.parseInt(stringValue);
+    }
+
+    protected <T> void validateConfig(T config) {
+        for (var field : config.getClass().getDeclaredFields()) {
+            if (isFieldNull(config, field)) {
+                var message = "undefined field {0} in {1}";
+                var fieldName = field.getName();
+                var className = config.getClass().getSimpleName();
+
+                throw new ConfigException(MessageFormat.format(message, fieldName, className));
+            }
+        }
+    }
+
+    private <T> boolean isFieldNull(T config, Field field) {
+        try {
+            field.setAccessible(true);
+
+            return field.get(config) == null;
+        } catch (IllegalArgumentException | IllegalAccessException e) {
+            return true;
         }
     }
 }
