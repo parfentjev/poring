@@ -5,17 +5,17 @@ import java.util.concurrent.TimeoutException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import ee.fakeplastictrees.poring.shared.config.Config;
+import ee.fakeplastictrees.poring.shared.config.RabbitMqConfig;
 
 public class RabbitMqManager {
     private static final String QUEUE_TO_ADAPTER = "to_adapter";
     private static final String EXCHANGE_TO_WORKER = "to_worker";
 
-    private Config.RabbitMq config;
+    private RabbitMqConfig config;
     private Connection connection;
     private Channel channel;
 
-    public RabbitMqManager(Config.RabbitMq config) {
+    public RabbitMqManager(RabbitMqConfig config) {
         this.config = config;
     }
 
