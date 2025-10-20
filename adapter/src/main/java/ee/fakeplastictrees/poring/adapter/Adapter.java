@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.time.Duration;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +14,6 @@ import ee.fakeplastictrees.poring.shared.config.AdapterConfig;
 
 public class Adapter {
     private final Logger logger = LogManager.getLogger(Adapter.class);
-
     private final AdapterConfig config;
 
     private Socket socket;
@@ -54,7 +54,20 @@ public class Adapter {
         }
 
         logger.info("disconnected");
-        // reconnect();
+        reconnect();
+    }
+
+    private void reconnect() {
+        try {
+            Thread.sleep(Duration.ofSeconds(10));
+            connect();
+        } catch (AdapterConnectionException e) {
+            logger.info("failed to reconnect", e);
+            reconnect();
+        } catch (InterruptedException e) {
+            logger.info("you thought you'd never see this one", e);
+            reconnect();
+        }
     }
 
     private void handle(String line) {
