@@ -1,14 +1,12 @@
 package ee.fakeplastictrees.poring.shared.config;
 
 public class RabbitMqConfig extends AbstractConfig<RabbitMqConfig> {
-    private final String host = getString("RABBITMQ_HOST");
-    private final Integer port = getInteger("RABBITMQ_PORT");
-    private final String username = getString("RABBITMQ_USERNAME");
-    private final String password = getString("RABBITMQ_PASSWORD");
+    private final String host = getString("RABBITMQ_HOST", true);
+    private final Integer port = getInteger("RABBITMQ_PORT", true);
+    private final String username = getString("RABBITMQ_USERNAME", true);
+    private final String password = getString("RABBITMQ_PASSWORD", true);
 
-    RabbitMqConfig() {
-        validateConfig(this);
-    }
+    RabbitMqConfig() {}
 
     public String getHost() {
         return host;
