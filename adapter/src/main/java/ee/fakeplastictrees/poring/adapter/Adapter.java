@@ -1,6 +1,10 @@
 package ee.fakeplastictrees.poring.adapter;
 
+import ee.fakeplastictrees.poring.adapter.exceptions.AdapterConnectionException;
+import ee.fakeplastictrees.poring.adapter.utils.MessageParser;
 import ee.fakeplastictrees.poring.shared.config.AdapterConfig;
+import ee.fakeplastictrees.poring.shared.models.WorkerMessage;
+import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqManager;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,27 +18,34 @@ import org.apache.logging.log4j.message.ParameterizedMessage;
 
 public class Adapter {
   private final Logger logger = LogManager.getLogger(Adapter.class);
+
   private final AdapterConfig config;
+  private final RabbitMqManager rabbitMqManager;
 
   private Socket socket;
   private BufferedReader reader;
   private PrintWriter writer;
 
-  public Adapter(AdapterConfig config) {
+  public Adapter(AdapterConfig config, RabbitMqManager rabbitMqManager) {
     this.config = config;
+    this.rabbitMqManager = rabbitMqManager;
   }
 
-  public void connect() throws AdapterConnectionException {
+  public void run() throws AdapterConnectionException {
     try {
       var socketFactory = SSLSocketFactory.getDefault();
       socket = socketFactory.createSocket(config.getHost(), config.getPort());
       reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       writer = new PrintWriter(socket.getOutputStream(), true);
 
-      new Thread(this::listen, "listener").start();
+      new Thread(this::listen).start();
     } catch (IOException | IllegalArgumentException e) {
       throw new AdapterConnectionException("failed to connect", e);
     }
+
+    rabbitMqManager
+        .getConsumer(RabbitMqManager.QUEUE_TO_ADAPTER, WorkerMessage.class)
+        .start(this::handleWorkerMessage);
 
     send("NICK {}", config.getNickname());
     send("USER poring 0 * :https://codeberg.org/parfentjev/poring");
@@ -60,7 +71,7 @@ public class Adapter {
   private void reconnect() {
     try {
       Thread.sleep(Duration.ofSeconds(10));
-      connect();
+      run();
     } catch (AdapterConnectionException e) {
       logger.info("failed to reconnect", e);
       reconnect();
@@ -77,6 +88,8 @@ public class Adapter {
     if (messageDto.command().equals("PING")) {
       send("PONG {}", messageDto.text());
     }
+
+    rabbitMqManager.publish(RabbitMqManager.QUEUE_TO_WORKER, messageDto);
   }
 
   public void send(String message, Object... params) {
@@ -84,7 +97,15 @@ public class Adapter {
   }
 
   public void send(String message) {
+    if (socket.isClosed()) {
+      return;
+    }
+
     logger.info("<= {}", message);
     writer.println(message);
+  }
+
+  private void handleWorkerMessage(WorkerMessage workerMessage) {
+    send(workerMessage.message());
   }
 }

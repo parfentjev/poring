@@ -1,4 +1,4 @@
-package ee.fakeplastictrees.poring.shared.model;
+package ee.fakeplastictrees.poring.shared.models;
 
 import java.util.List;
 

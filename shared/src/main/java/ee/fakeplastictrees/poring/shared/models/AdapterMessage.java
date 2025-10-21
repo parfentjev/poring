@@ -1,3 +1,3 @@
-package ee.fakeplastictrees.poring.shared.model;
+package ee.fakeplastictrees.poring.shared.models;
 
 public record AdapterMessage(ServerMessage serverMessage) {}

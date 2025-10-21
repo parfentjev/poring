@@ -1,6 +1,6 @@
-package ee.fakeplastictrees.poring.adapter;
+package ee.fakeplastictrees.poring.adapter.utils;
 
-import ee.fakeplastictrees.poring.shared.model.ServerMessage;
+import ee.fakeplastictrees.poring.shared.models.ServerMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
 
