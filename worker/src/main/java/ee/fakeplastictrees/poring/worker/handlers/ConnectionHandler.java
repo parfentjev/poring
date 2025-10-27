@@ -24,7 +24,7 @@ public class ConnectionHandler extends AbstractHandler {
   }
 
   private void handlePoringCommand(AdapterEvent event) {
-    if (event.connectionState() == ConnectionState.CONNECTING) {
+    if (event.getConnectionState() == ConnectionState.CONNECTING) {
       if (config.getSaslEnabled()) {
         new SASLHandler(
                 rabbitMqClient,

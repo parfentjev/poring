@@ -5,6 +5,7 @@ import ee.fakeplastictrees.poring.adapter.utils.MessageParser;
 import ee.fakeplastictrees.poring.shared.config.AdapterConfig;
 import ee.fakeplastictrees.poring.shared.models.AdapterEvent;
 import ee.fakeplastictrees.poring.shared.models.ConnectionState;
+import ee.fakeplastictrees.poring.shared.models.EventFactory;
 import ee.fakeplastictrees.poring.shared.models.WorkerEvent;
 import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqClient;
 import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqEventPublisher;
@@ -37,6 +38,10 @@ public class Adapter {
 
     this.eventPublisher =
         rabbitMqClient.getPublisher(RabbitMqTopology.EXCHANGE_IRC_MESSAGES.getName(), null);
+
+    this.rabbitMqClient
+        .getQueueConsumer(RabbitMqTopology.QUEUE_TO_ADAPTER.getName(), WorkerEvent.class)
+        .startQueueConsumer(this::consumeWorkerEvent);
   }
 
   public void start() throws AdapterConnectionException {
@@ -46,16 +51,13 @@ public class Adapter {
       reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       writer = new PrintWriter(socket.getOutputStream(), true);
 
-      eventPublisher.publish("PORING", new AdapterEvent(null, ConnectionState.CONNECTING));
+      var adapterEvent = EventFactory.adapterEventConnectionState(ConnectionState.CONNECTING);
+      eventPublisher.publish("PORING", adapterEvent);
 
       new Thread(this::listen).start();
     } catch (IOException | IllegalArgumentException e) {
       throw new AdapterConnectionException("failed to connect", e);
     }
-
-    rabbitMqClient
-        .getQueueConsumer(RabbitMqTopology.QUEUE_TO_ADAPTER.getName(), WorkerEvent.class)
-        .startQueueConsumer(this::consumeWorkerEvent);
   }
 
   private void listen() {
@@ -67,11 +69,21 @@ public class Adapter {
       logger.info("socket reader closed");
     }
 
-    logger.info("disconnected");
+    var adapterEvent = EventFactory.adapterEventConnectionState(ConnectionState.DISCONNECTED);
+    eventPublisher.publish("PORING", adapterEvent);
     reconnect();
   }
 
   private void reconnect() {
+    // disable reconnect for now to track crashes and other unexpected conditions
+    var disableReconnect = true;
+    if (disableReconnect) {
+      rabbitMqClient.disconnect();
+      System.exit(1);
+
+      return;
+    }
+
     try {
       Thread.sleep(Duration.ofSeconds(10));
       start();
@@ -88,11 +100,12 @@ public class Adapter {
     logger.info("=> {}", message);
 
     var ircMessage = MessageParser.parse(message);
-    if (ircMessage.command().equals("PING")) {
-      send("PONG {}", ircMessage.text());
+    if (ircMessage.getCommand().equals("PING")) {
+      send("PONG {}", ircMessage.getText());
     }
 
-    eventPublisher.publish(ircMessage.command(), new AdapterEvent(ircMessage, null));
+    var adapterEvent = EventFactory.adapterEventIrcMessage(ircMessage);
+    eventPublisher.publish(ircMessage.getCommand(), adapterEvent);
   }
 
   public void send(String message, Object... params) {
@@ -109,10 +122,10 @@ public class Adapter {
   }
 
   private void consumeWorkerEvent(WorkerEvent event) {
-    if (event.ircMessage() == null) {
+    if (event.getIrcMessage() == null) {
       return;
     }
 
-    send(event.ircMessage());
+    send(event.getIrcMessage());
   }
 }

@@ -35,9 +35,9 @@ public class SASLHandler extends AbstractHandler {
 
   private void capConsumer(AdapterEvent event) {
     var saslAcknowledged =
-        event.message().params().size() == 2
-            && event.message().params().getLast().equals("ACK")
-            && event.message().text().equals("sasl");
+        event.getIrcMessage().getParams().size() == 2
+            && event.getIrcMessage().getParams().getLast().equals("ACK")
+            && event.getIrcMessage().getText().equals("sasl");
 
     if (saslAcknowledged) {
       consumers.add(declareConsumer("AUTHENTICATE", this::authConsumer));
@@ -49,7 +49,8 @@ public class SASLHandler extends AbstractHandler {
 
   private void authConsumer(AdapterEvent event) {
     var credentialsRequested =
-        !event.message().params().isEmpty() && event.message().params().getFirst().equals("+");
+        !event.getIrcMessage().getParams().isEmpty()
+            && event.getIrcMessage().getParams().getFirst().equals("+");
 
     if (credentialsRequested) {
       consumers.add(declareConsumer("903", this::successConsumer));

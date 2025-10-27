@@ -52,12 +52,12 @@ public class RabbitMqClient {
     }
   }
 
-  public void disconnect() throws RabbitMqClientConnectionException {
+  public void disconnect() {
     try {
       channel.close();
       connection.close();
     } catch (IOException | TimeoutException e) {
-      throw new RabbitMqClientConnectionException("failed to close connection", e);
+      logger.error("failed to close connection", e);
     }
   }
 

@@ -1,6 +1,7 @@
 package ee.fakeplastictrees.poring.worker.handlers;
 
 import ee.fakeplastictrees.poring.shared.models.AdapterEvent;
+import ee.fakeplastictrees.poring.shared.models.EventFactory;
 import ee.fakeplastictrees.poring.shared.models.WorkerEvent;
 import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqClient;
 import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqConsumer;
@@ -34,6 +35,6 @@ public abstract class AbstractHandler {
   }
 
   protected void send(String message) {
-    eventPublisher.publish(new WorkerEvent(message));
+    eventPublisher.publish(EventFactory.workerEvent(message));
   }
 }
