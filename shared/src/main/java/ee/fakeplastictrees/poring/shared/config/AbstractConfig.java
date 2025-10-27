@@ -9,6 +9,10 @@ public abstract class AbstractConfig<T extends AbstractConfig<T>> {
     return Integer.parseInt(getEnv(key, required));
   }
 
+  protected Boolean getBoolean(String key, boolean required) {
+    return Boolean.parseBoolean(getEnv(key, required));
+  }
+
   private String getEnv(String key, boolean required) {
     var value = System.getenv(key);
     if ((value == null || value.isBlank()) && required) {

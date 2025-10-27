@@ -3,8 +3,12 @@ package ee.fakeplastictrees.poring.adapter;
 import ee.fakeplastictrees.poring.adapter.exceptions.AdapterConnectionException;
 import ee.fakeplastictrees.poring.adapter.utils.MessageParser;
 import ee.fakeplastictrees.poring.shared.config.AdapterConfig;
-import ee.fakeplastictrees.poring.shared.models.WorkerMessage;
-import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqManager;
+import ee.fakeplastictrees.poring.shared.models.AdapterEvent;
+import ee.fakeplastictrees.poring.shared.models.ConnectionState;
+import ee.fakeplastictrees.poring.shared.models.WorkerEvent;
+import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqClient;
+import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqEventPublisher;
+import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqTopology;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -20,39 +24,38 @@ public class Adapter {
   private final Logger logger = LogManager.getLogger(Adapter.class);
 
   private final AdapterConfig config;
-  private final RabbitMqManager rabbitMqManager;
+  private final RabbitMqClient rabbitMqClient;
+  private final RabbitMqEventPublisher<AdapterEvent> eventPublisher;
 
   private Socket socket;
   private BufferedReader reader;
   private PrintWriter writer;
 
-  public Adapter(AdapterConfig config, RabbitMqManager rabbitMqManager) {
+  public Adapter(AdapterConfig config, RabbitMqClient rabbitMqClient) {
     this.config = config;
-    this.rabbitMqManager = rabbitMqManager;
+    this.rabbitMqClient = rabbitMqClient;
+
+    this.eventPublisher =
+        rabbitMqClient.getPublisher(RabbitMqTopology.EXCHANGE_IRC_MESSAGES.getName(), null);
   }
 
-  public void run() throws AdapterConnectionException {
+  public void start() throws AdapterConnectionException {
     try {
       var socketFactory = SSLSocketFactory.getDefault();
       socket = socketFactory.createSocket(config.getHost(), config.getPort());
       reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       writer = new PrintWriter(socket.getOutputStream(), true);
 
+      eventPublisher.publish("PORING", new AdapterEvent(null, ConnectionState.CONNECTING));
+
       new Thread(this::listen).start();
     } catch (IOException | IllegalArgumentException e) {
       throw new AdapterConnectionException("failed to connect", e);
     }
 
-    rabbitMqManager
-        .getConsumer(RabbitMqManager.QUEUE_TO_ADAPTER, WorkerMessage.class)
-        .start(this::handleWorkerMessage);
-
-    send("NICK {}", config.getNickname());
-    send("USER poring 0 * :https://codeberg.org/parfentjev/poring");
-
-    for (var channel : config.getChannels()) {
-      send("JOIN {}", channel);
-    }
+    rabbitMqClient
+        .getQueueConsumer(RabbitMqTopology.QUEUE_TO_ADAPTER.getName(), WorkerEvent.class)
+        .startQueueConsumer(this::consumeWorkerEvent);
   }
 
   private void listen() {
@@ -71,7 +74,7 @@ public class Adapter {
   private void reconnect() {
     try {
       Thread.sleep(Duration.ofSeconds(10));
-      run();
+      start();
     } catch (AdapterConnectionException e) {
       logger.info("failed to reconnect", e);
       reconnect();
@@ -84,12 +87,12 @@ public class Adapter {
   private void handleRawMessage(String message) {
     logger.info("=> {}", message);
 
-    var messageDto = MessageParser.parse(message);
-    if (messageDto.command().equals("PING")) {
-      send("PONG {}", messageDto.text());
+    var ircMessage = MessageParser.parse(message);
+    if (ircMessage.command().equals("PING")) {
+      send("PONG {}", ircMessage.text());
     }
 
-    rabbitMqManager.publish(RabbitMqManager.QUEUE_TO_WORKER, messageDto);
+    eventPublisher.publish(ircMessage.command(), new AdapterEvent(ircMessage, null));
   }
 
   public void send(String message, Object... params) {
@@ -105,7 +108,11 @@ public class Adapter {
     writer.println(message);
   }
 
-  private void handleWorkerMessage(WorkerMessage workerMessage) {
-    send(workerMessage.message());
+  private void consumeWorkerEvent(WorkerEvent event) {
+    if (event.ircMessage() == null) {
+      return;
+    }
+
+    send(event.ircMessage());
   }
 }

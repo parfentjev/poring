@@ -1,11 +1,11 @@
 package ee.fakeplastictrees.poring.adapter.utils;
 
-import ee.fakeplastictrees.poring.shared.models.ServerMessage;
+import ee.fakeplastictrees.poring.shared.models.IRCMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class MessageParser {
-  public static ServerMessage parse(String message) {
+  public static IRCMessage parse(String message) {
     var tokens = message.trim().split(" ");
     var cursor = 0;
     var params = new ArrayList<String>();
@@ -32,6 +32,6 @@ public class MessageParser {
       params.add(token);
     }
 
-    return new ServerMessage(prefix, command, params, text);
+    return new IRCMessage(prefix, command, params, text);
   }
 }
