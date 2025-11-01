@@ -7,12 +7,14 @@ public class IRCMessage {
   private final String command;
   private final List<String> params;
   private final String text;
+  private final String raw;
 
-  public IRCMessage(String prefix, String command, List<String> params, String text) {
+  public IRCMessage(String prefix, String command, List<String> params, String text, String raw) {
     this.prefix = prefix;
     this.command = command;
     this.params = params;
     this.text = text;
+    this.raw = raw;
   }
 
   public String getPrefix() {
@@ -29,5 +31,9 @@ public class IRCMessage {
 
   public String getText() {
     return text;
+  }
+
+  public String getRaw() {
+    return raw;
   }
 }

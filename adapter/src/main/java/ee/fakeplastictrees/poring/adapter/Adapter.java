@@ -1,15 +1,13 @@
 package ee.fakeplastictrees.poring.adapter;
 
 import ee.fakeplastictrees.poring.adapter.exceptions.AdapterConnectionException;
-import ee.fakeplastictrees.poring.adapter.utils.MessageParser;
-import ee.fakeplastictrees.poring.shared.config.AdapterConfig;
-import ee.fakeplastictrees.poring.shared.models.AdapterEvent;
+import ee.fakeplastictrees.poring.adapter.rabbitmq.EventConsumer;
+import ee.fakeplastictrees.poring.adapter.rabbitmq.EventPublisher;
+import ee.fakeplastictrees.poring.shared.config.adapter.AdapterConfig;
 import ee.fakeplastictrees.poring.shared.models.ConnectionState;
 import ee.fakeplastictrees.poring.shared.models.EventFactory;
 import ee.fakeplastictrees.poring.shared.models.WorkerEvent;
 import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqClient;
-import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqEventPublisher;
-import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqTopology;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -25,8 +23,7 @@ public class Adapter {
   private final Logger logger = LogManager.getLogger(Adapter.class);
 
   private final AdapterConfig config;
-  private final RabbitMqClient rabbitMqClient;
-  private final RabbitMqEventPublisher<AdapterEvent> eventPublisher;
+  private final EventPublisher publisher;
 
   private Socket socket;
   private BufferedReader reader;
@@ -34,14 +31,9 @@ public class Adapter {
 
   public Adapter(AdapterConfig config, RabbitMqClient rabbitMqClient) {
     this.config = config;
-    this.rabbitMqClient = rabbitMqClient;
+    this.publisher = new EventPublisher(rabbitMqClient);
 
-    this.eventPublisher =
-        rabbitMqClient.getPublisher(RabbitMqTopology.EXCHANGE_IRC_MESSAGES.getName(), null);
-
-    this.rabbitMqClient
-        .getQueueConsumer(RabbitMqTopology.QUEUE_TO_ADAPTER.getName(), WorkerEvent.class)
-        .startQueueConsumer(this::consumeWorkerEvent);
+    new EventConsumer(rabbitMqClient).start(this::consumeWorkerEvent);
   }
 
   public void start() throws AdapterConnectionException {
@@ -52,7 +44,7 @@ public class Adapter {
       writer = new PrintWriter(socket.getOutputStream(), true);
 
       var adapterEvent = EventFactory.adapterEventConnectionState(ConnectionState.CONNECTING);
-      eventPublisher.publish("PORING", adapterEvent);
+      publisher.publish("PORING", adapterEvent);
 
       new Thread(this::listen).start();
     } catch (IOException | IllegalArgumentException e) {
@@ -62,7 +54,7 @@ public class Adapter {
 
   private void listen() {
     try {
-      for (String rawMessage; (rawMessage = reader.readLine()) != null; ) {
+      for (var rawMessage = ""; (rawMessage = reader.readLine()) != null; ) {
         handleRawMessage(rawMessage);
       }
     } catch (IOException e) {
@@ -70,20 +62,11 @@ public class Adapter {
     }
 
     var adapterEvent = EventFactory.adapterEventConnectionState(ConnectionState.DISCONNECTED);
-    eventPublisher.publish("PORING", adapterEvent);
+    publisher.publish("PORING", adapterEvent);
     reconnect();
   }
 
   private void reconnect() {
-    // disable reconnect for now to track crashes and other unexpected conditions
-    var disableReconnect = true;
-    if (disableReconnect) {
-      rabbitMqClient.disconnect();
-      System.exit(1);
-
-      return;
-    }
-
     try {
       Thread.sleep(Duration.ofSeconds(10));
       start();
@@ -105,7 +88,7 @@ public class Adapter {
     }
 
     var adapterEvent = EventFactory.adapterEventIrcMessage(ircMessage);
-    eventPublisher.publish(ircMessage.getCommand(), adapterEvent);
+    publisher.publish(ircMessage.getCommand(), adapterEvent);
   }
 
   public void send(String message, Object... params) {

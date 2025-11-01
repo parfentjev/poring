@@ -1,4 +1,6 @@
-package ee.fakeplastictrees.poring.shared.config;
+package ee.fakeplastictrees.poring.shared.config.rabbitmq;
+
+import ee.fakeplastictrees.poring.shared.config.AbstractConfig;
 
 public class RabbitMqConfig extends AbstractConfig<RabbitMqConfig> {
   private final String host = getString("RABBITMQ_HOST", true);
@@ -6,7 +8,7 @@ public class RabbitMqConfig extends AbstractConfig<RabbitMqConfig> {
   private final String username = getString("RABBITMQ_USERNAME", true);
   private final String password = getString("RABBITMQ_PASSWORD", true);
 
-  RabbitMqConfig() {}
+  public RabbitMqConfig() {}
 
   public String getHost() {
     return host;

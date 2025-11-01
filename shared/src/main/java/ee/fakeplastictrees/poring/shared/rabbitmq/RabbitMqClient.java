@@ -3,7 +3,7 @@ package ee.fakeplastictrees.poring.shared.rabbitmq;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import ee.fakeplastictrees.poring.shared.config.RabbitMqConfig;
+import ee.fakeplastictrees.poring.shared.config.rabbitmq.RabbitMqConfig;
 import ee.fakeplastictrees.poring.shared.rabbitmq.exceptions.RabbitMqClientConnectionException;
 import ee.fakeplastictrees.poring.shared.utils.JsonParser;
 import java.io.IOException;
@@ -70,16 +70,7 @@ public class RabbitMqClient {
     }
   }
 
-  public <T> RabbitMqConsumer<T> getQueueConsumer(String queue, Class<T> messageClass) {
-    return new RabbitMqConsumer<>(channel, null, null, queue, messageClass);
-  }
-
-  public <T> RabbitMqConsumer<T> getExchangeConsumer(
-      String exchange, String routingKey, Class<T> messageClass) {
-    return new RabbitMqConsumer<>(channel, exchange, routingKey, null, messageClass);
-  }
-
-  public <T> RabbitMqEventPublisher<T> getPublisher(String exchange, String queue) {
-    return new RabbitMqEventPublisher<>(this, exchange, queue);
+  public Channel getChannel() {
+    return channel;
   }
 }

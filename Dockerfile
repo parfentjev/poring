@@ -17,3 +17,9 @@ WORKDIR /app
 
 COPY --from=builder /app/adapter/target/adapter.jar .
 CMD ["java", "-jar", "adapter.jar"]
+
+FROM maven:3.9.11-eclipse-temurin-25-alpine AS worker
+WORKDIR /app
+
+COPY --from=builder /app/worker/target/worker.jar .
+CMD ["java", "-jar", "worker.jar"]

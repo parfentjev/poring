@@ -15,9 +15,9 @@ public class EventFactory {
     return adapterEvent;
   }
 
-  public static WorkerEvent workerEvent(String ircMessage) {
+  public static WorkerEvent workerEvent(String message) {
     var workerEvent = new WorkerEvent();
-    workerEvent.setIrcMessage(ircMessage);
+    workerEvent.setIrcMessage(message);
 
     return workerEvent;
   }
