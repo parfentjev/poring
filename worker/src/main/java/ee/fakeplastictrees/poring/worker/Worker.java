@@ -10,13 +10,13 @@ import ee.fakeplastictrees.poring.worker.rabbitmq.EventPublisher;
 import java.util.LinkedList;
 
 public class Worker {
-  private final WorkerConfig workerConfig;
+  private final WorkerConfig config;
   private final EventConsumer consumer;
   private final EventPublisher publisher;
   private final LinkedList<EventHandler> handlers;
 
-  public Worker(WorkerConfig workerConfig, RabbitMqClient rabbitMqClient) {
-    this.workerConfig = workerConfig;
+  public Worker(WorkerConfig config, RabbitMqClient rabbitMqClient) {
+    this.config = config;
     this.consumer = new EventConsumer(rabbitMqClient);
     this.publisher = new EventPublisher(rabbitMqClient);
     this.handlers = new LinkedList<>();
@@ -24,8 +24,7 @@ public class Worker {
 
   public void start() {
     registerHandler(
-        new AuthenticationHandler(
-            publisher, workerConfig.getUserConfig(), workerConfig.getSaslConfig()));
+        new AuthenticationHandler(publisher, config.getUserConfig(), config.getSaslConfig()));
 
     consumer.start(this::consume);
   }
