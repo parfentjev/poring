@@ -1,8 +1,6 @@
 package ee.fakeplastictrees.poring.shared.rabbitmq;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.*;
 import ee.fakeplastictrees.poring.shared.config.rabbitmq.RabbitMqConfig;
 import ee.fakeplastictrees.poring.shared.rabbitmq.exceptions.RabbitMqClientConnectionException;
 import ee.fakeplastictrees.poring.shared.utils.JsonParser;
@@ -24,20 +22,29 @@ public class RabbitMqClient {
   }
 
   public void connect() throws RabbitMqClientConnectionException {
-    var factory = new ConnectionFactory();
-    factory.setHost(config.getHost());
-    factory.setPort(config.getPort());
-    factory.setUsername(config.getUsername());
-    factory.setPassword(config.getPassword());
-
     try {
-      connection = factory.newConnection();
+      connection = getConnectionFactory().newConnection();
+      connection.addShutdownListener(
+          exception -> logger.info("rabbitmq connection is closed: {}", exception.getMessage()));
       channel = connection.createChannel();
     } catch (IOException | TimeoutException e) {
       throw new RabbitMqClientConnectionException("failed to connect", e);
     }
 
     declareTopology();
+  }
+
+  private ConnectionFactory getConnectionFactory() {
+    var factory = new ConnectionFactory();
+    factory.setHost(config.getHost());
+    factory.setPort(config.getPort());
+    factory.setUsername(config.getUsername());
+    factory.setPassword(config.getPassword());
+    factory.setAutomaticRecoveryEnabled(true);
+    factory.setNetworkRecoveryInterval(5000);
+    factory.setTopologyRecoveryEnabled(true);
+
+    return factory;
   }
 
   private void declareTopology() throws RabbitMqClientConnectionException {
@@ -48,16 +55,7 @@ public class RabbitMqClient {
       var queueName = RabbitMqTopology.QUEUE_TO_ADAPTER.getName();
       channel.queueDeclare(queueName, false, false, false, null);
     } catch (IOException e) {
-      throw new RabbitMqClientConnectionException("failed to declare topology", null);
-    }
-  }
-
-  public void disconnect() {
-    try {
-      channel.close();
-      connection.close();
-    } catch (IOException | TimeoutException e) {
-      logger.error("failed to close connection", e);
+      throw new RabbitMqClientConnectionException("failed to declare topology", e);
     }
   }
 
@@ -70,7 +68,18 @@ public class RabbitMqClient {
     }
   }
 
-  public Channel getChannel() {
-    return channel;
+  public String basicConsume(
+      String queue, boolean autoAck, DeliverCallback deliverCallback, CancelCallback cancelCallback)
+      throws IOException {
+    return channel.basicConsume(queue, autoAck, deliverCallback, cancelCallback);
+  }
+
+  public AMQP.Queue.DeclareOk queueDeclare() throws IOException {
+    return channel.queueDeclare();
+  }
+
+  public AMQP.Queue.BindOk queueBind(String queue, String exchange, String routingKey)
+      throws IOException {
+    return channel.queueBind(queue, exchange, routingKey);
   }
 }

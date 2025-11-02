@@ -18,19 +18,17 @@ public class EventConsumer {
 
   public void start(Consumer<WorkerEvent> consumer) {
     try {
-      rabbitMqClient
-          .getChannel()
-          .basicConsume(
-              RabbitMqTopology.QUEUE_TO_ADAPTER.getName(),
-              true,
-              (_, delivery) -> {
-                var message =
-                    JsonParser.toObject(
-                        new String(delivery.getBody(), StandardCharsets.UTF_8), WorkerEvent.class);
+      rabbitMqClient.basicConsume(
+          RabbitMqTopology.QUEUE_TO_ADAPTER.getName(),
+          true,
+          (_, delivery) -> {
+            var message =
+                JsonParser.toObject(
+                    new String(delivery.getBody(), StandardCharsets.UTF_8), WorkerEvent.class);
 
-                consumer.accept(message);
-              },
-              System.out::println);
+            consumer.accept(message);
+          },
+          System.out::println);
     } catch (IOException e) {
       throw new RabbitMqException("failed to start a consumer", e);
     }
