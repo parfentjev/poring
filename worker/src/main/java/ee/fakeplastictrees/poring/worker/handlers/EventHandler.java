@@ -7,9 +7,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 
 public abstract class EventHandler {
+  protected static final Logger logger = LogManager.getLogger(EventHandler.class);
+
   private final EventPublisher publisher;
   private final Map<String, Consumer<AdapterEvent>> consumers;
 
@@ -29,7 +33,11 @@ public abstract class EventHandler {
   public void handle(String command, AdapterEvent event) {
     var consumer = consumers.get(command);
     if (consumer != null) {
-      consumer.accept(event);
+      try {
+        consumer.accept(event);
+      } catch (Throwable t) {
+        logger.error("event handling error", t);
+      }
     }
   }
 

@@ -4,6 +4,7 @@ import ee.fakeplastictrees.poring.shared.config.worker.WorkerConfig;
 import ee.fakeplastictrees.poring.shared.models.AdapterEvent;
 import ee.fakeplastictrees.poring.shared.rabbitmq.RabbitMqClient;
 import ee.fakeplastictrees.poring.worker.handlers.AuthenticationHandler;
+import ee.fakeplastictrees.poring.worker.handlers.CeeksHandler;
 import ee.fakeplastictrees.poring.worker.handlers.EventHandler;
 import ee.fakeplastictrees.poring.worker.rabbitmq.EventConsumer;
 import ee.fakeplastictrees.poring.worker.rabbitmq.EventPublisher;
@@ -25,6 +26,7 @@ public class Worker {
   public void start() {
     registerHandler(
         new AuthenticationHandler(publisher, config.getUserConfig(), config.getSaslConfig()));
+    registerHandler(new CeeksHandler(publisher));
 
     consumer.start(this::consume);
   }
