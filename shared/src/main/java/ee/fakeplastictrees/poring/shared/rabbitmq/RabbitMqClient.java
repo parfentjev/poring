@@ -14,7 +14,6 @@ public class RabbitMqClient {
   private final Logger logger = LogManager.getLogger(RabbitMqClient.class);
 
   private final RabbitMqConfig config;
-  private Connection connection;
   private Channel channel;
 
   public RabbitMqClient(RabbitMqConfig config) {
@@ -22,8 +21,7 @@ public class RabbitMqClient {
   }
 
   public void connect() throws RabbitMqClientConnectionException {
-    try {
-      connection = getConnectionFactory().newConnection();
+    try (var connection = getConnectionFactory().newConnection()) {
       connection.addShutdownListener(
           exception -> logger.info("rabbitmq connection is closed: {}", exception.getMessage()));
       channel = connection.createChannel();

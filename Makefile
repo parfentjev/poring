@@ -6,6 +6,6 @@ build:
 
 .PHONY: push
 push:
-	rsync adapter.tar ${VPS_USER}@${VPS_HOST}:${VPS_PUSH_PATH}
-	rsync worker.tar ${VPS_USER}@${VPS_HOST}:${VPS_PUSH_PATH}
+	rsync --progress adapter.tar ${VPS_USER}@${VPS_HOST}:${VPS_PUSH_PATH}
+	rsync --progress worker.tar ${VPS_USER}@${VPS_HOST}:${VPS_PUSH_PATH}
 	rm adapter.tar worker.tar

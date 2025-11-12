@@ -40,6 +40,11 @@ public class Adapter {
     try {
       var socketFactory = SSLSocketFactory.getDefault();
       socket = socketFactory.createSocket(config.getHost(), config.getPort());
+
+      // prevent half-open connections
+      var socketTimeout = (int) Duration.ofMinutes(10).toMillis();
+      socket.setSoTimeout(socketTimeout);
+
       reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       writer = new PrintWriter(socket.getOutputStream(), true);
 
@@ -58,7 +63,8 @@ public class Adapter {
         handleRawMessage(rawMessage);
       }
     } catch (IOException e) {
-      logger.info("socket reader closed");
+      logger.info("socket reader exception", e);
+      closeSocket();
     }
 
     var adapterEvent = EventFactory.adapterEventConnectionState(ConnectionState.DISCONNECTED);
@@ -110,5 +116,13 @@ public class Adapter {
     }
 
     send(event.getIrcMessage());
+  }
+
+  private void closeSocket() {
+    try {
+      socket.close();
+    } catch (IOException e) {
+      logger.info("failed to close socket", e);
+    }
   }
 }
