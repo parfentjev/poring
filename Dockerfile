@@ -5,4 +5,4 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY . .
 
-ENTRYPOINT [ "bun", "run", "src/index.ts" ]
+ENTRYPOINT [ "bun", "run", "start" ]

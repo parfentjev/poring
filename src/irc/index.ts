@@ -2,7 +2,7 @@ import { TLSSocket } from 'tls'
 
 import { connect } from 'tls'
 import type { Config } from '../types/config'
-import type { EventHandler } from '../types/irc'
+import type { EventHandler, Message } from '../types/irc'
 import { SASLAuthenticator } from './authenticator'
 import { EventEmitter } from 'events'
 
@@ -18,10 +18,6 @@ export class IRCClient extends EventEmitter {
   }
 
   start() {
-    if (this.terminating) {
-      return
-    }
-
     this.emit('connecting')
 
     this.socket = connect({
@@ -39,8 +35,6 @@ export class IRCClient extends EventEmitter {
 
     this.send(`NICK ${this.config.user.nickname}`)
     this.send(`USER poring 0 * :${repositoryUrl}`)
-
-    this.addEventHandler('001', () => this.config.user.channels.forEach((channel) => this.send(`JOIN ${channel}`)))
   }
 
   stop() {
@@ -70,8 +64,12 @@ export class IRCClient extends EventEmitter {
       .forEach((raw) => {
         console.log(`=> ${raw}`)
 
-        const message = this.parseMessage(raw)
-        this.eventHandlers.get(message.command)?.forEach((handler) => handler({ send: this.send.bind(this), message }))
+        try {
+          const message = this.parseMessage(raw)
+          this.callHandlers(message)
+        } catch (error) {
+          console.error(error)
+        }
       })
   }
 
@@ -81,7 +79,9 @@ export class IRCClient extends EventEmitter {
     this.socket?.destroy()
     this.eventHandlers.clear()
 
-    setTimeout(() => this.start(), 5_000)
+    if (this.terminating) return
+
+    setTimeout(() => this.start(), 10_000)
   }
 
   private parseMessage(input: string) {
@@ -111,5 +111,15 @@ export class IRCClient extends EventEmitter {
     }
 
     return { prefix, command, params, text }
+  }
+
+  private callHandlers = (message: Message) => {
+    const handlers = this.eventHandlers.get(message.command)
+    if (!handlers) return
+
+    const params = { send: this.send.bind(this), message, config: this.config }
+    for (const handler of handlers) {
+      handler(params).catch((error) => console.error(error))
+    }
   }
 }
