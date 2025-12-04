@@ -2,15 +2,14 @@ import { TLSSocket } from 'tls'
 
 import { connect } from 'tls'
 import type { Config } from '../types/config'
-import type { EventHandler, Message } from '../types/irc'
+import type { EventContext, Event } from '../types/irc'
 import { SASLAuthenticator } from './authenticator'
 import { EventEmitter } from 'events'
 
 const repositoryUrl = 'https://github.com/parfentjev/poring'
 
-export class IRCClient extends EventEmitter {
+export class IRCClient extends EventEmitter<Event> {
   private socket: TLSSocket | undefined
-  private eventHandlers = new Map<string, EventHandler[]>()
   private terminating = false
 
   constructor(private config: Config) {
@@ -18,12 +17,12 @@ export class IRCClient extends EventEmitter {
   }
 
   start() {
-    this.emit('connecting')
-
     this.socket = connect({
       host: this.config.server.host,
       port: this.config.server.port,
     })
+
+    this.emit('bot.connecting')
 
     this.socket.on('data', this.onData.bind(this))
     this.socket.on('end', this.onEnd.bind(this))
@@ -49,13 +48,6 @@ export class IRCClient extends EventEmitter {
     this.socket.write(`${message}\r\n`)
   }
 
-  addEventHandler = (event: string, handler: EventHandler) => {
-    const handlers = this.eventHandlers.get(event) ?? []
-    handlers.push(handler)
-
-    this.eventHandlers.set(event, handlers)
-  }
-
   private onData(data: Buffer) {
     data
       .toString()
@@ -66,7 +58,8 @@ export class IRCClient extends EventEmitter {
 
         try {
           const message = this.parseMessage(raw)
-          this.callHandlers(message)
+          const params: EventContext = { send: this.send.bind(this), message, config: this.config }
+          this.emit(`irc.${message.command}`, params)
         } catch (error) {
           console.error(error)
         }
@@ -74,13 +67,12 @@ export class IRCClient extends EventEmitter {
   }
 
   private onEnd() {
-    this.emit('disconnected')
-
+    this.removeListeners()
     this.socket?.destroy()
-    this.eventHandlers.clear()
 
     if (this.terminating) return
 
+    this.emit('bot.disconnected')
     setTimeout(() => this.start(), 10_000)
   }
 
@@ -113,13 +105,11 @@ export class IRCClient extends EventEmitter {
     return { prefix, command, params, text }
   }
 
-  private callHandlers = (message: Message) => {
-    const handlers = this.eventHandlers.get(message.command)
-    if (!handlers) return
+  private removeListeners() {
+    this.eventNames().forEach((event) => {
+      if (typeof event === 'string' && event.startsWith('bot.')) return
 
-    const params = { send: this.send.bind(this), message, config: this.config }
-    for (const handler of handlers) {
-      handler(params).catch((error) => console.error(error))
-    }
+      this.removeAllListeners(event)
+    })
   }
 }
