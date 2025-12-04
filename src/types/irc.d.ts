@@ -1,5 +1,16 @@
 import type { Config } from './config'
 
+export type IRCEvent = {
+  [event: `irc.${string}`]: [EventContext]
+}
+
+export type IRCClientEvent = {
+  'bot.connecting': []
+  'bot.disconnected': []
+}
+
+export type Event = IRCEvent & IRCClientEvent
+
 export type Message = {
   prefix: string
   command: string

@@ -6,9 +6,9 @@ export class SASLAuthenticator {
   constructor(private client: IRCClient, private config: SASLConfig) {}
 
   start() {
-    this.client.addEventHandler('CAP', this.handleCap.bind(this))
-    this.client.addEventHandler('AUTHENTICATE', this.handleAuth.bind(this))
-    this.client.addEventHandler('903', this.handleAuthSuccess.bind(this))
+    this.client.on('irc.CAP', this.handleCap.bind(this))
+    this.client.on('irc.AUTHENTICATE', this.handleAuth.bind(this))
+    this.client.on('irc.903', this.handleAuthSuccess.bind(this))
 
     this.client.send('CAP REQ :sasl')
   }

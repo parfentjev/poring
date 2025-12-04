@@ -1,9 +1,9 @@
 import { config } from './config'
-import { registerHandlers } from './handlers'
+import { registerListeners } from './listeners'
 import { IRCClient } from './irc'
 
 const bot = new IRCClient(config)
-bot.on('connecting', () => registerHandlers(bot.addEventHandler))
+bot.on('bot.connecting', () => registerListeners(bot))
 bot.start()
 
 process.on('SIGTERM', () => bot.stop())
