@@ -5,4 +5,4 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY . .
 
-ENTRYPOINT [ "bun", "run", "start" ]
+ENTRYPOINT [ "bun", "start" ]
