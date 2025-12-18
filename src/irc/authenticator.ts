@@ -1,38 +1,37 @@
-import type { IRCClient } from '.'
-import type { SASLConfig } from '../types/config'
-import type { EventContext } from '../types/irc'
+import type { IrcEventContext, SendFunction } from '../types/irc'
+import type { EventManager } from './events'
 
-export class SASLAuthenticator {
-  constructor(private client: IRCClient, private config: SASLConfig) {}
-
-  start() {
-    this.client.on('irc.CAP', this.handleCap.bind(this))
-    this.client.on('irc.AUTHENTICATE', this.handleAuth.bind(this))
-    this.client.on('irc.903', this.handleAuthSuccess.bind(this))
-
-    this.client.send('CAP REQ :sasl')
+export class SaslAuthenticator {
+  constructor(eventManager: EventManager, private send: SendFunction) {
+    eventManager.onIrc('CAP', this.handleCap)
+    eventManager.onIrc('AUTHENTICATE', this.handleAuth)
+    eventManager.onIrc('903', this.handleAuthSuccess)
   }
 
-  private async handleCap(context: EventContext) {
+  authenticate() {
+    this.send('CAP REQ :sasl')
+  }
+
+  private async handleCap(context: IrcEventContext) {
     if (context.message.params.length === 2 && context.message.params[1] === 'ACK' && context.message.text === 'sasl') {
       context.send('AUTHENTICATE PLAIN')
     }
   }
 
-  private async handleAuth(context: EventContext) {
+  private async handleAuth(context: IrcEventContext) {
     if (context.message.params.length > 0 && context.message.params[0] === '+') {
       const data = Buffer.concat([
         Buffer.from('\x00'),
-        Buffer.from(this.config.username ?? ''),
+        Buffer.from(context.config.user.sasl.username ?? ''),
         Buffer.from('\x00'),
-        Buffer.from(this.config.password ?? ''),
+        Buffer.from(context.config.user.sasl.password ?? ''),
       ]).toString('base64')
 
       context.send(`AUTHENTICATE ${data}`)
     }
   }
 
-  private async handleAuthSuccess(context: EventContext) {
+  private async handleAuthSuccess(context: IrcEventContext) {
     context.send('CAP END')
   }
 }

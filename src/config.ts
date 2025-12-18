@@ -14,4 +14,12 @@ export const config: Config = {
       password: process.env.SASL_PASSWORD,
     },
   },
+  listener: {
+    freshRSS: {
+      url: process.env.FRESH_RSS_URL!,
+      apiKey: process.env.FRESH_RSS_API_KEY!,
+      notification: process.env.FRESH_RSS_NOTIFICATION!,
+      target: process.env.FRESH_RSS_TARGET!,
+    },
+  },
 }

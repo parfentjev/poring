@@ -1,6 +1,7 @@
 export type Config = {
   server: ServerConfig
   user: UserConfig
+  listener: ListenerConfig
 }
 
 export type ServerConfig = {
@@ -18,4 +19,15 @@ export type SASLConfig = {
   enabled: boolean
   username: string | undefined
   password: string | undefined
+}
+
+export type ListenerConfig = {
+  freshRSS: FreshRSSConfig
+}
+
+export type FreshRSSConfig = {
+  url: string
+  apiKey: string
+  notification: string
+  target: string
 }

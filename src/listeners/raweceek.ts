@@ -1,4 +1,4 @@
-import type { EventContext } from '../types/irc'
+import type { IrcEventContext } from '../types/irc'
 
 type NextSessionResponse = {
   summary: string
@@ -8,7 +8,7 @@ type NextSessionResponse = {
   countdowns: { type: string; value: string }[]
 }
 
-export const ceeksHandler = async (context: EventContext) => {
+export const ceeksHandler = async (context: IrcEventContext) => {
   const target = context.message.params[0]
   if (context.message.text !== '!ceeks') return
 

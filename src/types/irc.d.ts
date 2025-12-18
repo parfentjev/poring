@@ -1,15 +1,4 @@
-import type { Config } from './config'
-
-export type IRCEvent = {
-  [event: `irc.${string}`]: [EventContext]
-}
-
-export type IRCClientEvent = {
-  'bot.connecting': []
-  'bot.disconnected': []
-}
-
-export type Event = IRCEvent & IRCClientEvent
+import type { Config, ListenerConfig } from './config'
 
 export type Message = {
   prefix: string
@@ -20,12 +9,21 @@ export type Message = {
 
 export type SendFunction = (string: string) => void
 
-export type EventContext = {
+export type IrcEventContext = {
   send: SendFunction
   message: Message
   config: Config
 }
 
-export type EventHandler = {
-  (context: EventContext): Promise<void>
+export type IrcEventHandler = {
+  (context: IrcEventContext): Promise<void>
 }
+
+export type ClientEventHandler = () => Promise<void>
+
+export type CronEventContext = {
+  send: SendFunction
+  config: ListenerConfig
+}
+
+export type CronEventHandler = (context: CronEventContext) => Promise<void>

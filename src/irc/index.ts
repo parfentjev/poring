@@ -2,18 +2,22 @@ import { TLSSocket } from 'tls'
 
 import { connect } from 'tls'
 import type { Config } from '../types/config'
-import type { EventContext, Event } from '../types/irc'
-import { SASLAuthenticator } from './authenticator'
-import { EventEmitter } from 'events'
+import { EventManager } from './events'
+import { SaslAuthenticator } from './authenticator'
 
 const repositoryUrl = 'https://github.com/parfentjev/poring'
 
-export class IRCClient extends EventEmitter<Event> {
+export class IrcClient {
   private socket: TLSSocket | undefined
+  readonly eventManager: EventManager
+  private authenticator: SaslAuthenticator
   private terminating = false
 
-  constructor(private config: Config) {
-    super()
+  constructor(readonly config: Config) {
+    this.send = this.send.bind(this)
+
+    this.eventManager = new EventManager(this.config.listener, this.send)
+    this.authenticator = new SaslAuthenticator(this.eventManager, this.send)
   }
 
   start() {
@@ -22,14 +26,13 @@ export class IRCClient extends EventEmitter<Event> {
       port: this.config.server.port,
     })
 
-    this.emit('bot.connecting')
+    this.eventManager.emitClient('connecting')
 
     this.socket.on('data', this.onData.bind(this))
     this.socket.on('end', this.onEnd.bind(this))
 
     if (this.config.user.sasl.enabled) {
-      const authenticator = new SASLAuthenticator(this, this.config.user.sasl)
-      authenticator.start()
+      this.authenticator.authenticate()
     }
 
     this.send(`NICK ${this.config.user.nickname}`)
@@ -41,7 +44,7 @@ export class IRCClient extends EventEmitter<Event> {
     this.send(`QUIT :${repositoryUrl}`)
   }
 
-  send = (message: string) => {
+  private send = (message: string) => {
     if (!this.socket || this.socket.closed) return
 
     console.log(`<= ${message}`)
@@ -58,8 +61,8 @@ export class IRCClient extends EventEmitter<Event> {
 
         try {
           const message = this.parseMessage(raw)
-          const params: EventContext = { send: this.send.bind(this), message, config: this.config }
-          this.emit(`irc.${message.command}`, params)
+          const context = { send: this.send, message, config: this.config }
+          this.eventManager.emitIrc(message.command, context)
         } catch (error) {
           console.error(error)
         }
@@ -67,12 +70,11 @@ export class IRCClient extends EventEmitter<Event> {
   }
 
   private onEnd() {
-    this.removeListeners()
     this.socket?.destroy()
 
     if (this.terminating) return
 
-    this.emit('bot.disconnected')
+    this.eventManager.emitClient('disconnected')
     setTimeout(() => this.start(), 10_000)
   }
 
@@ -103,13 +105,5 @@ export class IRCClient extends EventEmitter<Event> {
     }
 
     return { prefix, command, params, text }
-  }
-
-  private removeListeners() {
-    this.eventNames().forEach((event) => {
-      if (typeof event === 'string' && event.startsWith('bot.')) return
-
-      this.removeAllListeners(event)
-    })
   }
 }
