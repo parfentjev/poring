@@ -1,11 +1,11 @@
 import type { FreshRSSConfig } from '../types/config'
-import type { CronEventContext } from '../types/irc'
+import type { CronJobContext } from '../types/irc'
 import type { FreshRSSItemsResponse } from '../types/listeners'
 
 const maxPossibleId = BigInt('18446744073709551615')
 let maxKnownId: bigint | undefined
 
-export const rssHandler = async (context: CronEventContext) => {
+export const rssHandler = async (context: CronJobContext) => {
   if (await shouldSendAlert(context.config.freshRSS)) {
     context.send(`PRIVMSG ${context.config.freshRSS.target} :${context.config.freshRSS.notification}`)
   }

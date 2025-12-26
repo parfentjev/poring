@@ -1,55 +1,35 @@
 import { CronJob } from 'cron'
-import type { ClientEventHandler, CronEventHandler, IrcEventContext, IrcEventHandler, SendFunction } from '../types/irc'
-import type { ListenerConfig } from '../types/config'
+import type { CronJobContext, EventHandler } from '../types/irc'
 
-export class EventManager {
-  private ircEventListeners: Map<string, IrcEventHandler[]>
-  private clientEventListeners: Map<string, ClientEventHandler[]>
-  private cronJobs: CronJob[] = []
+export class EventManager<T> {
+  private listeners: Map<string, EventHandler<T>[]>
 
-  constructor(private config: ListenerConfig, private send: SendFunction) {
-    this.ircEventListeners = new Map()
-    this.clientEventListeners = new Map()
-    this.cronJobs = []
+  constructor() {
+    this.listeners = new Map()
   }
 
-  emitIrc(command: string, context: IrcEventContext) {
-    const listeners = this.ircEventListeners.get(command)
-    if (!listeners || listeners.length === 0) return
-
-    for (const listener of listeners) {
-      listener(context).catch((error) => console.error(error))
-    }
-  }
-
-  emitClient(event: string) {
-    const listeners = this.clientEventListeners.get(event)
-    if (!listeners || listeners.length === 0) return
-
-    for (const listener of listeners) {
-      listener().catch((error) => console.error(error))
-    }
-  }
-
-  onIrc(command: string, handler: IrcEventHandler) {
-    const handlers = this.ircEventListeners.get(command) ?? []
+  on = (event: string, handler: EventHandler<T>) => {
+    const handlers = this.listeners.get(event) ?? []
     handlers.push(handler)
 
-    this.ircEventListeners.set(command, handlers)
+    this.listeners.set(event, handlers)
   }
 
-  onClient(event: string, handler: ClientEventHandler) {
-    const handlers = this.clientEventListeners.get(event) ?? []
-    handlers.push(handler)
+  emit = (event: string, context: T) => {
+    const handlers = this.listeners.get(event)
+    if (!handlers || handlers.length === 0) return
 
-    this.clientEventListeners.set(event, handlers)
+    for (const handler of handlers) {
+      handler(context).catch((error) => console.error(error))
+    }
   }
+}
 
-  onCron(cronTime: string, handler: CronEventHandler) {
-    const context = { send: this.send, config: this.config }
-    const job = new CronJob(cronTime, () => handler(context).catch((error) => console.error(error)))
+export class CronJobManager {
+  constructor(private contextProvider: () => CronJobContext) {}
+
+  on = (cronTime: string, handler: EventHandler<CronJobContext>) => {
+    const job = new CronJob(cronTime, () => handler(this.contextProvider()).catch((error) => console.error(error)))
     job.start()
-
-    this.cronJobs.push(job)
   }
 }
