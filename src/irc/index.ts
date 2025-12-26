@@ -4,29 +4,31 @@ import { connect } from 'tls'
 import type { Config } from '../types/config'
 import { EventManager } from './events'
 import { SaslAuthenticator } from './authenticator'
+import type { IrcClientContext, IrcEventContext } from '../types/irc'
 
 const repositoryUrl = 'https://github.com/parfentjev/poring'
 
 export class IrcClient {
   private socket: TLSSocket | undefined
-  readonly eventManager: EventManager
   private authenticator: SaslAuthenticator
   private terminating = false
 
-  constructor(readonly config: Config) {
+  constructor(
+    readonly config: Config,
+    private ircEventManager: EventManager<IrcEventContext>,
+    private clientEventManager: EventManager<IrcClientContext>
+  ) {
     this.send = this.send.bind(this)
-
-    this.eventManager = new EventManager(this.config.listener, this.send)
-    this.authenticator = new SaslAuthenticator(this.eventManager, this.send)
+    this.authenticator = new SaslAuthenticator(this.ircEventManager, this.send)
   }
 
-  start() {
+  start = () => {
     this.socket = connect({
       host: this.config.server.host,
       port: this.config.server.port,
     })
 
-    this.eventManager.emitClient('connecting')
+    this.clientEventManager.emit('connecting', this.context())
 
     this.socket.on('data', this.onData.bind(this))
     this.socket.on('end', this.onEnd.bind(this))
@@ -39,9 +41,16 @@ export class IrcClient {
     this.send(`USER poring 0 * :${repositoryUrl}`)
   }
 
-  stop() {
+  stop = () => {
     this.terminating = true
     this.send(`QUIT :${repositoryUrl}`)
+  }
+
+  context = () => {
+    return <IrcClientContext>{
+      send: this.send,
+      config: this.config,
+    }
   }
 
   private send = (message: string) => {
@@ -62,7 +71,7 @@ export class IrcClient {
         try {
           const message = this.parseMessage(raw)
           const context = { send: this.send, message, config: this.config }
-          this.eventManager.emitIrc(message.command, context)
+          this.ircEventManager.emit(message.command, context)
         } catch (error) {
           console.error(error)
         }
@@ -74,7 +83,7 @@ export class IrcClient {
 
     if (this.terminating) return
 
-    this.eventManager.emitClient('disconnected')
+    this.clientEventManager.emit('disconnected', this.context())
     setTimeout(() => this.start(), 10_000)
   }
 

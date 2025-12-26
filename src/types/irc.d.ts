@@ -9,21 +9,20 @@ export type Message = {
 
 export type SendFunction = (string: string) => void
 
+export type EventHandler<T> = (context: T) => Promise<void>
+
+export type IrcClientContext = {
+  send: SendFunction
+  config: Config
+}
+
 export type IrcEventContext = {
   send: SendFunction
   message: Message
   config: Config
 }
 
-export type IrcEventHandler = {
-  (context: IrcEventContext): Promise<void>
-}
-
-export type ClientEventHandler = () => Promise<void>
-
-export type CronEventContext = {
+export type CronJobContext = {
   send: SendFunction
   config: ListenerConfig
 }
-
-export type CronEventHandler = (context: CronEventContext) => Promise<void>

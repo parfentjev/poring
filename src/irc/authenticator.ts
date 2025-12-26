@@ -2,10 +2,10 @@ import type { IrcEventContext, SendFunction } from '../types/irc'
 import type { EventManager } from './events'
 
 export class SaslAuthenticator {
-  constructor(eventManager: EventManager, private send: SendFunction) {
-    eventManager.onIrc('CAP', this.handleCap)
-    eventManager.onIrc('AUTHENTICATE', this.handleAuth)
-    eventManager.onIrc('903', this.handleAuthSuccess)
+  constructor(eventManager: EventManager<IrcEventContext>, private send: SendFunction) {
+    eventManager.on('CAP', this.handleCap)
+    eventManager.on('AUTHENTICATE', this.handleAuth)
+    eventManager.on('903', this.handleAuthSuccess)
   }
 
   authenticate() {
