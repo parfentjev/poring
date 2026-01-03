@@ -1,6 +1,7 @@
 import { TZDate } from '@date-fns/tz'
 import type { IrcEventContext } from '../types/irc'
 import { getDaysInYear, isValid } from 'date-fns'
+import type { Clock } from '../types/utils'
 
 const defaultOffset = '+00:00'
 const averageDaysInMonth = 30.44
@@ -11,7 +12,7 @@ export const newYearHandler = async (context: IrcEventContext) => {
   if (!messageText.startsWith('!newyear') && !messageText.startsWith('!ny')) return
 
   const offset = getOffset(messageText)
-  const { diff } = getDatesByOffset(offset)
+  const { diff } = getDatesByOffset(context.clock, offset)
 
   const months = Math.floor(diff / (1000 * 60 * 60 * 24 * averageDaysInMonth))
   const weeks = Math.floor((diff % (1000 * 60 * 60 * 24 * averageDaysInMonth)) / (1000 * 60 * 60 * 24 * 7))
@@ -29,10 +30,10 @@ export const yearProgressHandler = async (context: IrcEventContext) => {
   if (!messageText.startsWith('!year')) return
 
   const offset = getOffset(messageText)
-  const { now, diff } = getDatesByOffset(offset)
+  const { now, diff } = getDatesByOffset(context.clock, offset)
 
   const yearLength = getDaysInYear(now) * millisecondsInDay
-  const progress = (100 - (diff / yearLength) * 100).toFixed(2)
+  const progress = Math.min(100 - (diff / yearLength) * 100, 99.99).toFixed(2)
 
   const response = `Year ${now.getFullYear()} progress: \x02${progress}%\x02 👀🚧💃`
   context.send(`PRIVMSG ${context.message.params[0]} :${response}`)
@@ -47,8 +48,8 @@ const getOffset = (messageText: string) => {
   return offset
 }
 
-const getDatesByOffset = (offset: string) => {
-  let now = TZDate.tz(offset)
+const getDatesByOffset = (clock: Clock, offset: string) => {
+  let now = clock.now(offset)
   let newYear = new TZDate(now.getFullYear() + 1, 0, 1, 0, 0, offset)
 
   if (!isValid(now) || !isValid(newYear)) {
