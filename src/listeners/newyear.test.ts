@@ -204,7 +204,6 @@ describe('newyear.ts', () => {
         await newYearHandler(context({ text, clock }))
       }
 
-      console.log(out)
       expect(out[0]).toBe(expected('0d 12h 0m 0s'))
       expect(out[1]).toBe(expected('361d 9h 0m 0s'))
       expect(out[2]).toBe(expected('0d 10h 0m 0s'))
