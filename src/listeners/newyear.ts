@@ -3,9 +3,14 @@ import type { IrcEventContext } from '../types/irc'
 import { getDaysInYear, isValid } from 'date-fns'
 import type { Clock } from '../types/utils'
 
-const defaultOffset = '+00:00'
-const averageDaysInMonth = 30.44
-const millisecondsInDay = 8.64e7
+const DEFAULT_OFFSET = '+00:00'
+
+const SECOND = 1000
+const MINUTE = SECOND * 60
+const HOUR = MINUTE * 60
+const DAY = HOUR * 24
+
+const MS_IN_DAY = 8.64e7
 
 export const newYearHandler = async (context: IrcEventContext) => {
   const messageText = context.message.text
@@ -14,14 +19,12 @@ export const newYearHandler = async (context: IrcEventContext) => {
   const offset = getOffset(messageText)
   const { diff } = getDatesByOffset(context.clock, offset)
 
-  const months = Math.floor(diff / (1000 * 60 * 60 * 24 * averageDaysInMonth))
-  const weeks = Math.floor((diff % (1000 * 60 * 60 * 24 * averageDaysInMonth)) / (1000 * 60 * 60 * 24 * 7))
-  const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 7)) / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+  const days = Math.floor(diff / DAY)
+  const hours = Math.floor((diff % DAY) / HOUR)
+  const minutes = Math.floor((diff % HOUR) / MINUTE)
+  const seconds = Math.floor((diff % MINUTE) / SECOND)
 
-  const response = `It's only ${months}mo ${weeks}w ${days}d ${hours}h ${minutes}m ${seconds}s left until the \x02new year\x02! 🎄☃️🎉`
+  const response = `It's only ${days}d ${hours}h ${minutes}m ${seconds}s left until the \x02new year\x02! 🎄☃️🎉`
   context.send(`PRIVMSG ${context.message.params[0]} :${response}`)
 }
 
@@ -32,7 +35,7 @@ export const yearProgressHandler = async (context: IrcEventContext) => {
   const offset = getOffset(messageText)
   const { now, diff } = getDatesByOffset(context.clock, offset)
 
-  const yearLength = getDaysInYear(now) * millisecondsInDay
+  const yearLength = getDaysInYear(now) * MS_IN_DAY
   const progress = Math.min(100 - (diff / yearLength) * 100, 99.99).toFixed(2)
 
   const response = `Year ${now.getFullYear()} progress: \x02${progress}%\x02 👀🚧💃`
@@ -42,7 +45,7 @@ export const yearProgressHandler = async (context: IrcEventContext) => {
 const getOffset = (messageText: string) => {
   const request = messageText.split(' ')
 
-  let offset = defaultOffset
+  let offset = DEFAULT_OFFSET
   if (request.length === 2) offset = parseOffset(request[1]!)
 
   return offset
@@ -53,8 +56,8 @@ const getDatesByOffset = (clock: Clock, offset: string) => {
   let newYear = new TZDate(now.getFullYear() + 1, 0, 1, 0, 0, offset)
 
   if (!isValid(now) || !isValid(newYear)) {
-    now = TZDate.tz(defaultOffset)
-    newYear = new TZDate(now.getFullYear() + 1, 0, 1, 0, 0, defaultOffset)
+    now = TZDate.tz(DEFAULT_OFFSET)
+    newYear = new TZDate(now.getFullYear() + 1, 0, 1, 0, 0, DEFAULT_OFFSET)
   }
 
   return { now, newYear, diff: newYear.valueOf() - now.valueOf() }
