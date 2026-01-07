@@ -17,14 +17,14 @@ export const newYearHandler = async (context: IrcEventContext) => {
   if (!messageText.startsWith('!newyear') && !messageText.startsWith('!ny')) return
 
   const offset = getOffset(messageText)
-  const { diff } = getDatesByOffset(context.clock, offset)
+  const { newYear, diff } = getDatesByOffset(context.clock, offset)
 
   const days = Math.floor(diff / DAY)
   const hours = Math.floor((diff % DAY) / HOUR)
   const minutes = Math.floor((diff % HOUR) / MINUTE)
   const seconds = Math.floor((diff % MINUTE) / SECOND)
 
-  const response = `It's only ${days}d ${hours}h ${minutes}m ${seconds}s left until the \x02new year\x02! 🎄☃️🎉`
+  const response = `Just ${days}d ${hours}h ${minutes}m ${seconds}s until \x02${newYear.getFullYear()}\x02! 🎄☃️🎉`
   context.send(`PRIVMSG ${context.message.params[0]} :${response}`)
 }
 

@@ -24,8 +24,8 @@ describe('newyear.ts', () => {
       return context
     }
 
-    const expected = (countdown: string) =>
-      `PRIVMSG ${defaultTarget} :It's only ${countdown} left until the \x02new year\x02! 🎄☃️🎉`
+    const expected = (countdown: string, year = 2027) =>
+      `PRIVMSG ${defaultTarget} :Just ${countdown} until \x02${year}\x02! 🎄☃️🎉`
 
     test('require command', async () => {
       const event = context({ text: 'some regular text message' })
@@ -192,7 +192,7 @@ describe('newyear.ts', () => {
         await newYearHandler(message)
       }
 
-      expect(out).toContain(expected('364d 23h 0m 0s'))
+      expect(out).toContain(expected('364d 23h 0m 0s', 2028))
       expect(out).toContain(expected('0d 1h 0m 0s'))
     })
 
@@ -205,7 +205,7 @@ describe('newyear.ts', () => {
       }
 
       expect(out[0]).toBe(expected('0d 12h 0m 0s'))
-      expect(out[1]).toBe(expected('361d 9h 0m 0s'))
+      expect(out[1]).toBe(expected('361d 9h 0m 0s', 2028))
       expect(out[2]).toBe(expected('0d 10h 0m 0s'))
     })
   })
@@ -349,7 +349,6 @@ describe('newyear.ts', () => {
         await yearProgressHandler(context({ text, clock }))
       }
 
-      console.log(out)
       expect(out[0]).toBe(expected('99.86%'))
       expect(out[1]).toBe(expected('0.99%', 2027))
       expect(out[2]).toBe(expected('99.89%'))
