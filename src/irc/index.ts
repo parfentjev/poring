@@ -5,6 +5,7 @@ import type { Config } from '../types/config'
 import { EventManager } from './events'
 import { SaslAuthenticator } from './authenticator'
 import type { IrcClientContext, IrcEventContext } from '../types/irc'
+import { tzDateClock } from '../utils/clock'
 
 const repositoryUrl = 'https://github.com/parfentjev/poring'
 
@@ -70,7 +71,7 @@ export class IrcClient {
 
         try {
           const message = this.parseMessage(raw)
-          const context = { send: this.send, message, config: this.config }
+          const context = { send: this.send, message, config: this.config, clock: tzDateClock }
           this.ircEventManager.emit(message.command, context)
         } catch (error) {
           console.error(error)

@@ -1,4 +1,5 @@
 import type { Config, ListenerConfig } from './config'
+import type { Clock } from './utils'
 
 export type Message = {
   prefix: string
@@ -20,6 +21,7 @@ export type IrcEventContext = {
   send: SendFunction
   message: Message
   config: Config
+  clock: Clock
 }
 
 export type CronJobContext = {
