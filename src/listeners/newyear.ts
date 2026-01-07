@@ -56,8 +56,9 @@ const getDatesByOffset = (clock: Clock, offset: string) => {
   let newYear = new TZDate(now.getFullYear() + 1, 0, 1, 0, 0, offset)
 
   if (!isValid(now) || !isValid(newYear)) {
-    now = TZDate.tz(DEFAULT_OFFSET)
+    now = clock.now(DEFAULT_OFFSET)
     newYear = new TZDate(now.getFullYear() + 1, 0, 1, 0, 0, DEFAULT_OFFSET)
+    console.log(now, newYear)
   }
 
   return { now, newYear, diff: newYear.valueOf() - now.valueOf() }

@@ -195,6 +195,20 @@ describe('newyear.ts', () => {
       expect(out).toContain(expected('364d 23h 0m 0s'))
       expect(out).toContain(expected('0d 1h 0m 0s'))
     })
+
+    test('handle invalid offset', async () => {
+      const clock = new ClockMock(new TZDate(2026, 11, 31, 12, 0, 0, utc))
+      const invalidOffsets = ['!ny invalid', '!ny +99:00', '!ny +02:abc123']
+
+      for (const text of invalidOffsets) {
+        await newYearHandler(context({ text, clock }))
+      }
+
+      console.log(out)
+      expect(out[0]).toBe(expected('0d 12h 0m 0s'))
+      expect(out[1]).toBe(expected('361d 9h 0m 0s'))
+      expect(out[2]).toBe(expected('0d 10h 0m 0s'))
+    })
   })
 
   describe('yearProgressHandler', () => {
@@ -210,8 +224,8 @@ describe('newyear.ts', () => {
       return context
     }
 
-    const expected = (progress: string) =>
-      `PRIVMSG ${defaultTarget} :Year 2026 progress: \u0002${progress}\u0002 👀🚧💃`
+    const expected = (progress: string, year = 2026) =>
+      `PRIVMSG ${defaultTarget} :Year ${year} progress: \u0002${progress}\u0002 👀🚧💃`
 
     test('require !year', async () => {
       const regularText = context({ text: 'some regular text message' })
@@ -326,6 +340,20 @@ describe('newyear.ts', () => {
       await yearProgressHandler(context({ text: '!year +09:00', clock }))
 
       expect(out[0]).toContain('Year 2026')
+    })
+
+    test('handle invalid offset', async () => {
+      const clock = new ClockMock(new TZDate(2026, 11, 31, 12, 0, 0, utc))
+      const invalidOffsets = ['!year invalid', '!year +99:00', '!year +02:abc123']
+
+      for (const text of invalidOffsets) {
+        await yearProgressHandler(context({ text, clock }))
+      }
+
+      console.log(out)
+      expect(out[0]).toBe(expected('99.86%'))
+      expect(out[1]).toBe(expected('0.99%', 2027))
+      expect(out[2]).toBe(expected('99.89%'))
     })
   })
 })
