@@ -12,22 +12,33 @@ export type ServerConfig = {
 export type UserConfig = {
   nickname: string
   channels: string[]
-  sasl: SASLConfig
+  sasl: SaslConfig
 }
 
-export type SASLConfig = {
+export type SaslConfig = {
   enabled: boolean
   username: string | undefined
   password: string | undefined
 }
 
 export type ListenerConfig = {
-  freshRSS: FreshRSSConfig
+  freshRss: FreshRssConfig
+  idleRpg: IdleRpgConfig
 }
 
-export type FreshRSSConfig = {
+export type FreshRssConfig = {
+  // todo: add cron property, make all props optional
   url: string
   apiKey: string
   notification: string
   target: string
+}
+
+export type IdleRpgConfig = {
+  cron?: string
+  channel?: string
+  player?: string
+  notification?: string
+  target?: string
+  isValid(): boolean
 }

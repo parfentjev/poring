@@ -25,7 +25,7 @@ export const createIrcEventContext = (onSend: (s: string) => void) =>
         },
       },
       listener: {
-        freshRSS: {
+        freshRss: {
           url: '',
           apiKey: '',
           notification: '',
