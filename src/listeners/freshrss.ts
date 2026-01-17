@@ -1,17 +1,17 @@
-import type { FreshRSSConfig } from '../types/config'
+import type { FreshRssConfig } from '../types/config'
 import type { CronJobContext } from '../types/irc'
 import type { FreshRSSItemsResponse } from '../types/listeners'
 
 const maxPossibleId = BigInt('18446744073709551615')
 let maxKnownId: bigint | undefined
 
-export const rssHandler = async (context: CronJobContext) => {
-  if (await shouldSendAlert(context.config.freshRSS)) {
-    context.send(`PRIVMSG ${context.config.freshRSS.target} :${context.config.freshRSS.notification}`)
+export const rssJob = async (context: CronJobContext) => {
+  if (await shouldSendAlert(context.config.freshRss)) {
+    context.send(`PRIVMSG ${context.config.freshRss.target} :${context.config.freshRss.notification}`)
   }
 }
 
-const shouldSendAlert = async (config: FreshRSSConfig) => {
+const shouldSendAlert = async (config: FreshRssConfig) => {
   // on first run, fetch last 50 items (API default limit) to initialize maxKnownId
   // on subsequent runs, fetch only items newer than maxKnownId
   const filterKey = maxKnownId ? 'since_id' : 'max_id'
@@ -29,7 +29,7 @@ const shouldSendAlert = async (config: FreshRSSConfig) => {
   return response.items.some((i) => i.is_read === 0)
 }
 
-const fetchItems = async (config: FreshRSSConfig, filter: { key: 'since_id' | 'max_id'; value: bigint }) => {
+const fetchItems = async (config: FreshRssConfig, filter: { key: 'since_id' | 'max_id'; value: bigint }) => {
   const path = `/api/fever.php?api&items&${filter.key}=${filter.value}`
 
   const formData = new FormData()

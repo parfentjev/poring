@@ -17,7 +17,7 @@ const cronJobManager = new CronJobManager(() => {
   }
 })
 
-registerListeners(ircEventManager, clientEventManager, cronJobManager)
+registerListeners(config.listener, ircEventManager, clientEventManager, cronJobManager)
 ircClient.start()
 
 process.on('SIGTERM', () => ircClient.stop())

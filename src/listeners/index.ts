@@ -2,10 +2,13 @@ import { connectedHandler, pingHandler } from './core'
 import { ceeksHandler } from './raweceek'
 import type { CronJobManager, EventManager } from '../irc/events'
 import type { IrcClientContext, IrcEventContext } from '../types/irc'
-import { rssHandler } from './freshrss'
+import { rssJob } from './freshrss'
 import { newYearHandler, yearProgressHandler } from './newyear'
+import type { ListenerConfig } from '../types/config'
+import { registerIdleRpg } from './idlerpg'
 
 export const registerListeners = (
+  config: ListenerConfig,
   ircEventManager: EventManager<IrcEventContext>,
   _clientEventManager: EventManager<IrcClientContext>,
   cronJobManager: CronJobManager
@@ -16,6 +19,6 @@ export const registerListeners = (
   ircEventManager.on('PRIVMSG', newYearHandler)
   ircEventManager.on('PRIVMSG', yearProgressHandler)
 
-  // the feed is refreshed twice per hour (8, 38) - run 5m after that
-  cronJobManager.on('8,38 * * * *', rssHandler)
+  cronJobManager.on('8,38 * * * *', rssJob)
+  registerIdleRpg(config.idleRpg, ircEventManager, cronJobManager)
 }

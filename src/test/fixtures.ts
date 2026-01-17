@@ -1,3 +1,4 @@
+import type { IdleRpgConfig } from '../types/config'
 import type { IrcEventContext } from '../types/irc'
 import { ClockMock } from './mocks'
 
@@ -25,12 +26,13 @@ export const createIrcEventContext = (onSend: (s: string) => void) =>
         },
       },
       listener: {
-        freshRSS: {
+        freshRss: {
           url: '',
           apiKey: '',
           notification: '',
           target: '',
         },
+        idleRpg: <IdleRpgConfig>{},
       },
     },
     clock: new ClockMock(),
