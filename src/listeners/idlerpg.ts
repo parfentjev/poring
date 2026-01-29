@@ -2,6 +2,31 @@ import type { CronJobManager, EventManager } from '../irc/events'
 import type { IdleRpgConfig } from '../types/config'
 import type { CronJobContext, IrcEventContext } from '../types/irc'
 
+class IdleRpgNotifier {
+  private playerAuthenticated = false
+
+  constructor(private config: IdleRpgConfig) {}
+
+  async cronHandler({ send }: CronJobContext) {
+    this.playerAuthenticated = false
+    send(`NAMES ${this.config.channel}`)
+  }
+
+  async namesHandler({ message }: IrcEventContext) {
+    const { params, text } = message
+
+    if (params[params.length - 1] !== this.config.channel) return
+
+    if (text.includes(`+${this.config.player}`)) this.playerAuthenticated = true
+  }
+
+  async namesEndHandler({ send }: IrcEventContext) {
+    if (this.playerAuthenticated) return
+
+    send(`PRIVMSG ${this.config.target} :${this.config.notification}`)
+  }
+}
+
 export const registerIdleRpg = (
   config: IdleRpgConfig,
   ircEventManager: EventManager<IrcEventContext>,
@@ -12,23 +37,8 @@ export const registerIdleRpg = (
     return
   }
 
-  ircEventManager.on('353', idleRpgHandler)
-  cronJobManager.on(config.cron!, idleRpgJob)
-}
-
-export const idleRpgJob = async (context: CronJobContext) => {
-  context.send(`NAMES ${context.config.idleRpg.channel}`)
-}
-
-export const idleRpgHandler = async (context: IrcEventContext) => {
-  const { params, text } = context.message
-  const config = context.config.listener.idleRpg
-
-  // channel name is always the final param
-  if (params[params.length - 1] !== config.channel) return
-
-  // users with a voice flag are logged in - all is good
-  if (text.includes(`+${config.player}`)) return
-
-  context.send(`PRIVMSG ${config.target} :${config.notification}`)
+  const notifier = new IdleRpgNotifier(config)
+  ircEventManager.on('353', notifier.namesHandler.bind(notifier))
+  ircEventManager.on('366', notifier.namesEndHandler.bind(notifier))
+  cronJobManager.on(config.cron!, notifier.cronHandler.bind(notifier))
 }
