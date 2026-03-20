@@ -13,6 +13,7 @@ export class IrcClient {
   private socket: TLSSocket | undefined
   private authenticator: SaslAuthenticator
   private terminating = false
+  private buffer = ''
 
   constructor(
     readonly config: Config,
@@ -62,21 +63,17 @@ export class IrcClient {
   }
 
   private onData(data: Buffer) {
-    data
-      .toString()
-      .trim()
-      .split('\r\n')
-      .forEach((raw) => {
-        console.log(`=> ${raw}`)
+    this.readLines(data).forEach((line) => {
+      console.log(`=> ${line}`)
 
-        try {
-          const message = this.parseMessage(raw)
-          const context = { send: this.send, message, config: this.config, clock: tzDateClock }
-          this.ircEventManager.emit(message.command, context)
-        } catch (error) {
-          console.error(error)
-        }
-      })
+      try {
+        const message = this.parseMessage(line)
+        const context = { send: this.send, message, config: this.config, clock: tzDateClock }
+        this.ircEventManager.emit(message.command, context)
+      } catch (error) {
+        console.error(error)
+      }
+    })
   }
 
   private onEnd() {
@@ -86,6 +83,22 @@ export class IrcClient {
 
     this.clientEventManager.emit('disconnected', this.context())
     setTimeout(() => this.start(), 10_000)
+  }
+
+  private readLines(data: Buffer) {
+    // A message may be split across multiple data events, so incoming data
+    // is appended to a buffer before splitting. Any incomplete message at
+    // the end of the buffer is held in the buffer until the next chunk arrives,
+    // at which point it will be reassembled into a complete line.
+    this.buffer += data.toString()
+    const lines = this.buffer.split('\r\n')
+
+    // Removes the last element from an array and returns it,
+    // which is either an empty string or an incomplete message
+    // that wasn't terminated.
+    this.buffer = lines.pop() ?? ''
+
+    return lines
   }
 
   private parseMessage(input: string) {
