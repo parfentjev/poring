@@ -27,18 +27,20 @@ export type ListenerConfig = {
 }
 
 export type FreshRssConfig = {
-  // todo: add cron property, make all props optional
-  url: string
-  apiKey: string
-  notification: string
-  target: string
+  enabled?: boolean
+  url?: string
+  apiKey?: string
+  notification?: string
+  target?: string
+  isEnabled(): this is Required<FreshRssConfig>
 }
 
 export type IdleRpgConfig = {
+  enabled?: boolean
   cron?: string
   channel?: string
   player?: string
   notification?: string
   target?: string
-  isValid(): boolean
+  isEnabled(): this is Required<IdleRpgConfig>
 }

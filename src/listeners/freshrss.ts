@@ -1,3 +1,4 @@
+import type { CronJobManager } from '../irc/events'
 import type { FreshRssConfig } from '../types/config'
 import type { CronJobContext } from '../types/irc'
 import type { FreshRSSItemsResponse } from '../types/listeners'
@@ -5,13 +6,18 @@ import type { FreshRSSItemsResponse } from '../types/listeners'
 const maxPossibleId = BigInt('18446744073709551615')
 let maxKnownId: bigint | undefined
 
-export const rssJob = async (context: CronJobContext) => {
-  if (await shouldSendAlert(context.config.freshRss)) {
-    context.send(`PRIVMSG ${context.config.freshRss.target} :${context.config.freshRss.notification}`)
+const rssJob = async (context: CronJobContext) => {
+  const { freshRss: config } = context.config
+  if (!config.isEnabled()) {
+    return
+  }
+
+  if (await shouldSendAlert(config)) {
+    context.send(`PRIVMSG ${config.target} :${config.notification}`)
   }
 }
 
-const shouldSendAlert = async (config: FreshRssConfig) => {
+const shouldSendAlert = async (config: Required<FreshRssConfig>) => {
   // on first run, fetch last 50 items (API default limit) to initialize maxKnownId
   // on subsequent runs, fetch only items newer than maxKnownId
   const filterKey = maxKnownId ? 'since_id' : 'max_id'
@@ -29,7 +35,7 @@ const shouldSendAlert = async (config: FreshRssConfig) => {
   return response.items.some((i) => i.is_read === 0)
 }
 
-const fetchItems = async (config: FreshRssConfig, filter: { key: 'since_id' | 'max_id'; value: bigint }) => {
+const fetchItems = async (config: Required<FreshRssConfig>, filter: { key: 'since_id' | 'max_id'; value: bigint }) => {
   const path = `/api/fever.php?api&items&${filter.key}=${filter.value}`
 
   const formData = new FormData()
@@ -53,4 +59,12 @@ const fetchItems = async (config: FreshRssConfig, filter: { key: 'since_id' | 'm
 
     return json
   })
+}
+
+export const registerFreshRss = (config: FreshRssConfig, cronJobManager: CronJobManager) => {
+  if (!config.isEnabled()) {
+    return
+  }
+
+  cronJobManager.on('8,38 * * * *', rssJob)
 }

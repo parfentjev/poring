@@ -7,10 +7,8 @@
     "start": "bun run src/index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "@types/bun": "latest",
+    "typescript": "latest"
   },
   "dependencies": {
     "@date-fns/tz": "^1.4.1",

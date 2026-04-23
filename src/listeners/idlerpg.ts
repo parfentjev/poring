@@ -5,7 +5,7 @@ import type { CronJobContext, IrcEventContext } from '../types/irc'
 class IdleRpgNotifier {
   private playerAuthenticated = false
 
-  constructor(private config: IdleRpgConfig) {
+  constructor(private config: Required<IdleRpgConfig>) {
     this.cronHandler = this.cronHandler.bind(this)
     this.namesHandler = this.namesHandler.bind(this)
     this.namesEndHandler = this.namesEndHandler.bind(this)
@@ -38,13 +38,12 @@ export const registerIdleRpg = (
   ircEventManager: EventManager<IrcEventContext>,
   cronJobManager: CronJobManager
 ) => {
-  if (!config.isValid()) {
-    console.info('IdleRpgConfig is empty, skip idlerpg.ts')
+  if (!config.isEnabled()) {
     return
   }
 
   const notifier = new IdleRpgNotifier(config)
   ircEventManager.on('353', notifier.namesHandler)
   ircEventManager.on('366', notifier.namesEndHandler)
-  cronJobManager.on(config.cron!, notifier.cronHandler)
+  cronJobManager.on(config.cron, notifier.cronHandler)
 }
