@@ -25,15 +25,16 @@ export class IrcClient {
   }
 
   start = () => {
-    this.socket = connect({
+    const socket = connect({
       host: this.config.server.host,
       port: this.config.server.port,
     })
 
+    this.socket = socket
     this.clientEventManager.emit('connecting', this.context())
 
-    this.socket.on('data', this.onData.bind(this))
-    this.socket.on('end', this.onEnd.bind(this))
+    socket.on('data', this.onData.bind(this))
+    socket.on('end', this.onEnd.bind(this))
 
     if (this.config.user.sasl.enabled) {
       this.authenticator.authenticate()
