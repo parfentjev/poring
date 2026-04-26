@@ -1,4 +1,4 @@
-import type { FreshRssConfig, IdleRpgConfig } from '../types/config'
+import type { FreshRssConfig, IdleRpgConfig, RaweCeekConfig } from '../types/config'
 import type { IrcEventContext } from '../types/irc'
 import { ClockMock } from './mocks'
 
@@ -26,6 +26,7 @@ export const createIrcEventContext = (onSend: (s: string) => void) =>
         },
       },
       listener: {
+        raweCeek: <RaweCeekConfig>{},
         freshRss: <FreshRssConfig>{},
         idleRpg: <IdleRpgConfig>{},
       },

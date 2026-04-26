@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: helm/secrets\.yaml$
+    encrypted_regex: ^stringData$
+    pgp: 06876C2B349531CE307C62CC8393B8E6D14D7E78

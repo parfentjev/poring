@@ -1,0 +1,7 @@
+image:
+  repository: ghcr.io/parfentjev/poring
+
+deployment:
+  replicaCount: 1
+  strategy: Recreate
+  secretRef: poring-secrets
