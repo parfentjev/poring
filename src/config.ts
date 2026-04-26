@@ -1,4 +1,4 @@
-import type { Config, FreshRssConfig, IdleRpgConfig } from './types/config'
+import type { Config, FreshRssConfig, IdleRpgConfig, RaweCeekConfig } from './types/config'
 
 export const config: Config = {
   server: {
@@ -15,6 +15,13 @@ export const config: Config = {
     },
   },
   listener: {
+    raweCeek: {
+      enabled: process.env.RAWE_CEEK_ENABLED === 'true',
+      url: process.env.RAWE_CEEK_URL,
+      isEnabled(): this is Required<RaweCeekConfig> {
+        return this.enabled === true && this.url !== undefined
+      },
+    },
     freshRss: {
       enabled: process.env.FRESH_RSS_ENABLED === 'true',
       url: process.env.FRESH_RSS_URL,

@@ -9,10 +9,13 @@ type NextSessionResponse = {
 }
 
 export const ceeksHandler = async (context: IrcEventContext) => {
+  const config = context.config.listener.raweCeek
+  if (!config.isEnabled()) return
+
   const target = context.message.params[0]
   if (context.message.text !== '!ceeks') return
 
-  const response = await fetch('https://raweceek.eu/api/next-session')
+  const response = await fetch(`${config.url}/api/next-session`)
   if (!response || response.status !== 200) return
 
   const body = (await response.json()) as NextSessionResponse

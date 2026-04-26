@@ -22,8 +22,15 @@ export type SaslConfig = {
 }
 
 export type ListenerConfig = {
+  raweCeek: RaweCeekConfig
   freshRss: FreshRssConfig
   idleRpg: IdleRpgConfig
+}
+
+export type RaweCeekConfig = {
+  enabled?: boolean
+  url?: string
+  isEnabled(): this is Required<RaweCeekConfig>
 }
 
 export type FreshRssConfig = {

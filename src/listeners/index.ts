@@ -10,9 +10,19 @@ import { registerIdleRpg } from './idlerpg'
 export const registerListeners = (
   config: ListenerConfig,
   ircEventManager: EventManager<IrcEventContext>,
-  _clientEventManager: EventManager<IrcClientContext>,
+  clientEventManager: EventManager<IrcClientContext>,
   cronJobManager: CronJobManager
 ) => {
+  clientEventManager.on('connecting', async (context: IrcClientContext) => {
+    const server = context.config.server
+    console.log(`Connecting to ${server.host}:${server.port}`)
+  })
+
+  clientEventManager.on('disconnected', async (context: IrcClientContext) => {
+    const server = context.config.server
+    console.log(`Disconnected from ${server.host}:${server.port}`)
+  })
+
   ircEventManager.on('001', connectedHandler)
   ircEventManager.on('PING', pingHandler)
   ircEventManager.on('PRIVMSG', ceeksHandler)
