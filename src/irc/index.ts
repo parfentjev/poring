@@ -7,7 +7,7 @@ import { SaslAuthenticator } from './authenticator'
 import type { IrcClientContext, IrcEventContext } from '../types/irc'
 import { tzDateClock } from '../utils/clock'
 
-const repositoryUrl = 'https://github.com/parfentjev/poring'
+const repositoryUrl = 'https://codeberg.org/parfentjev/poring'
 
 export class IrcClient {
   private socket: TLSSocket | undefined
