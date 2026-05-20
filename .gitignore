@@ -1,3 +1,1 @@
-node_modules/
-helm/secrets.yaml
-.env
+/target
