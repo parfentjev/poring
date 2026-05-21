@@ -1,4 +1,5 @@
 use std::{
+    collections::VecDeque,
     fmt,
     io::{BufRead, BufReader, Error, Write},
     net::TcpStream,
@@ -44,8 +45,12 @@ impl Client {
             };
 
             println!("=> {}", raw_message);
-            if let Some(token) = raw_message.strip_prefix("PING :") {
-                write(&mut writer, format_args!("PONG :{}", token));
+            if let Some(message) = parse_raw_message(&raw_message) {
+                if let Some(text) = message.text
+                    && message.command == "PING"
+                {
+                    write(&mut writer, format_args!("PONG :{}", text));
+                }
             }
         }
     }
@@ -67,13 +72,58 @@ fn write(writer: &mut TcpStream, message: fmt::Arguments<'_>) {
     }
 }
 
-/*
-fn parse_raw_message(raw_message: &str) {
-    let tokens = raw_message.split(' ').collect::<Vec<_>>();
-    let mut params = Vec::new();
-
-    let mut prefix: String;
-    let mut command: String;
-    let mut text: String;
+struct Message {
+    prefix: Option<String>,
+    command: String,
+    params: Vec<String>,
+    text: Option<String>,
 }
-*/
+
+fn parse_raw_message(raw_message: &str) -> Option<Message> {
+    let mut tokens = raw_message.split(' ').collect::<VecDeque<_>>();
+
+    let prefix = match tokens.front() {
+        Some(token) if token.starts_with(':') => {
+            let prefix = token[1..].to_string();
+            tokens.pop_front();
+            Some(prefix)
+        }
+        _ => None,
+    };
+
+    let command = match tokens.pop_front() {
+        Some(token) => token.to_string(),
+        None => return None,
+    };
+
+    let params: Vec<String>;
+    let mut text = String::new();
+
+    if let Some(text_begins) = tokens.iter().position(|t| t.starts_with(':')) {
+        params = tokens
+            .iter()
+            .take(text_begins)
+            .map(|p| p.to_string())
+            .collect();
+
+        for (i, token) in tokens.range(text_begins..).enumerate() {
+            // need to strip that `:` at the front
+            if i == 0 {
+                text.push_str(&token[1..]);
+                continue;
+            }
+
+            text.push(' ');
+            text.push_str(token);
+        }
+    } else {
+        params = tokens.iter().map(|p| p.to_string()).collect();
+    }
+
+    Some(Message {
+        prefix,
+        command,
+        params,
+        text: Some(text),
+    })
+}
