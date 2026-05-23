@@ -5,17 +5,21 @@ use std::{
     net::TcpStream,
 };
 
-use crate::config::Config;
+use crate::{config::Config, event_manager::EventManager};
 
 const USER_MESSAGE: &str = "USER poring 0 * :https://codeberg.org/parfentjev/poring/";
 
 pub struct Client {
     config: Config,
+    event_manager: EventManager,
 }
 
 impl Client {
-    pub fn new(config: Config) -> Self {
-        Client { config }
+    pub fn new(config: Config, event_manager: EventManager) -> Self {
+        Client {
+            config,
+            event_manager,
+        }
     }
 
     pub fn start(&mut self) {
@@ -46,11 +50,13 @@ impl Client {
 
             println!("=> {}", raw_message);
             if let Some(message) = parse_raw_message(&raw_message) {
-                if let Some(text) = message.text
-                    && message.command == "PING"
-                {
-                    write(&mut writer, format_args!("PONG :{}", text));
-                }
+                self.event_manager
+                    .emit(message.command, String::from("some context"));
+                // if let Some(text) = message.text
+                //     && message.command == "PING"
+                // {
+                //     write(&mut writer, format_args!("PONG :{}", text));
+                // }
             }
         }
     }
