@@ -7,7 +7,10 @@ use std::{
 
 use crate::{
     config::Config,
-    core::event_manager::{EventContext, EventManager},
+    core::{
+        authenticator,
+        event_manager::{EventContext, EventManager},
+    },
 };
 
 pub struct Client {
@@ -17,26 +20,27 @@ pub struct Client {
 
 impl Client {
     pub fn new(config: Config, event_manager: EventManager) -> Self {
-        Client {
+        Self {
             config,
             event_manager,
         }
     }
 
     pub fn start(&mut self) {
-        let Config { server, user, .. } = &self.config;
+        authenticator::init(&mut self.event_manager);
 
-        let stream = TcpStream::connect(&server.address).expect("failed to connect");
-        let mut sender = Sender::new(stream.try_clone().expect("failed to create stream writer"));
-        let reader = BufReader::new(stream);
+        loop {
+            let stream =
+                TcpStream::connect(&self.config.server.address).expect("failed to connect");
+            let mut sender =
+                Sender::new(stream.try_clone().expect("failed to create stream writer"));
+            let reader = BufReader::new(stream);
 
-        sender.send(format_args!("NICK {}", user.nickname));
-        sender.send(format_args!(
-            "USER {} 0 * :{}",
-            user.username, user.realname
-        ));
+            authenticator::authenticate(&mut sender);
+            self.read_messages(reader, sender);
 
-        self.read_messages(reader, sender);
+            println!("disconnected");
+        }
     }
 
     fn read_messages(&mut self, reader: BufReader<TcpStream>, mut sender: Sender) {
@@ -71,7 +75,7 @@ pub struct Sender {
 
 impl Sender {
     fn new(writer: TcpStream) -> Self {
-        Sender { writer }
+        Self { writer }
     }
 
     pub fn send(&mut self, message: fmt::Arguments<'_>) {

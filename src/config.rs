@@ -5,7 +5,7 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
-        Config {
+        Self {
             server: ServerConfig::default(),
             user: UserConfig::default(),
         }
@@ -33,6 +33,7 @@ pub struct UserConfig {
     pub nickname: String,
     pub username: String,
     pub realname: String,
+    pub sasl: AuthenticatorConfig,
 }
 
 impl Default for UserConfig {
@@ -41,6 +42,21 @@ impl Default for UserConfig {
             nickname: get("USER_NICKNAME"),
             username: get("USER_USERNAME"),
             realname: get("USER_REALNAME"),
+            sasl: AuthenticatorConfig::default(),
+        }
+    }
+}
+
+pub struct AuthenticatorConfig {
+    pub username: String,
+    pub password: String,
+}
+
+impl Default for AuthenticatorConfig {
+    fn default() -> Self {
+        Self {
+            username: get("USER_SASL_USERNAME"),
+            password: get("USER_SASL_PASSWORD"),
         }
     }
 }

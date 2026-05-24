@@ -13,7 +13,7 @@ pub struct EventContext<'a> {
 
 impl<'a> EventContext<'a> {
     pub fn new(config: &'a Config, message: &'a Message, sender: &'a mut Sender) -> Self {
-        EventContext {
+        Self {
             config,
             message,
             sender,
@@ -29,7 +29,7 @@ pub struct EventManager {
 
 impl EventManager {
     pub fn new() -> Self {
-        EventManager {
+        Self {
             handlers: HashMap::new(),
         }
     }
