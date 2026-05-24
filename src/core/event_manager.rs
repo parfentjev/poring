@@ -21,10 +21,7 @@ impl EventManager {
     }
 
     pub fn register(&mut self, event: impl Into<String>, handler: Box<EventHandler>) {
-        self.handlers
-            .entry(event.into())
-            .or_default()
-            .push(Box::new(handler));
+        self.handlers.entry(event.into()).or_default().push(handler);
     }
 
     pub fn dispatch(&self, event: &str, context: &mut EventContext) {

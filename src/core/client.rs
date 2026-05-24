@@ -5,7 +5,10 @@ use std::{
     net::TcpStream,
 };
 
-use crate::{config::Config, core::event_manager::EventContext, event_manager::EventManager};
+use crate::{
+    config::Config,
+    core::event_manager::{EventContext, EventManager},
+};
 
 const USER_MESSAGE: &str = "USER poring 0 * :https://codeberg.org/parfentjev/poring/";
 
