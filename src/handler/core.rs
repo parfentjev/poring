@@ -9,7 +9,5 @@ pub fn welcome_handler(ctx: &mut EventContext) {
 }
 
 pub fn ping_handler(ctx: &mut EventContext) {
-    if let Some(text) = ctx.message.text.as_ref() {
-        ctx.sender.send(format_args!("PONG :{}", text));
-    }
+    ctx.sender.send(format_args!("PONG :{}", ctx.message.text));
 }

@@ -102,7 +102,7 @@ pub struct Message {
     pub prefix: Option<String>,
     pub command: String,
     pub params: Vec<String>,
-    pub text: Option<String>,
+    pub text: String,
 }
 
 fn parse_raw_message(raw_message: &str) -> Option<Message> {
@@ -150,6 +150,6 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
         prefix,
         command,
         params,
-        text: if text.is_empty() { None } else { Some(text) },
+        text,
     })
 }
