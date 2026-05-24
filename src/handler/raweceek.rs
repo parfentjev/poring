@@ -26,7 +26,7 @@ pub fn raweceek_handler(ctx: &mut EventContext) {
 }
 
 fn handle(ctx: &mut EventContext) -> Result<(), String> {
-    let response = ureq::get("https://raweceek.eu/api/next-session")
+    let response = ureq::get(&ctx.config.handler.raweceek.url)
         .call()
         .map_err(|e| format!("GET request failed: {}", e))?
         .body_mut()

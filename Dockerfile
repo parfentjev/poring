@@ -3,6 +3,6 @@ WORKDIR /usr/src/poring
 COPY . .
 RUN cargo install --path .
 
-FROM alpine:latest
+FROM debian:trixie-slim
 COPY --from=builder /usr/local/cargo/bin/poring /usr/local/bin/app
 CMD ["app"]

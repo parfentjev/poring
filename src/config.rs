@@ -1,6 +1,7 @@
 pub struct Config {
     pub server: ServerConfig,
     pub user: UserConfig,
+    pub handler: HandlerConfig,
 }
 
 impl Config {
@@ -8,6 +9,7 @@ impl Config {
         Self {
             server: ServerConfig::default(),
             user: UserConfig::default(),
+            handler: HandlerConfig::default(),
         }
     }
 }
@@ -57,6 +59,30 @@ impl Default for AuthenticatorConfig {
         Self {
             username: get("USER_SASL_USERNAME"),
             password: get("USER_SASL_PASSWORD"),
+        }
+    }
+}
+
+pub struct HandlerConfig {
+    pub raweceek: RaweceekConfig,
+}
+
+impl Default for HandlerConfig {
+    fn default() -> Self {
+        Self {
+            raweceek: RaweceekConfig::default(),
+        }
+    }
+}
+
+pub struct RaweceekConfig {
+    pub url: String,
+}
+
+impl Default for RaweceekConfig {
+    fn default() -> Self {
+        Self {
+            url: get("HANDLER_RAWECEEK_URL"),
         }
     }
 }
