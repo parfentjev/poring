@@ -1,7 +1,16 @@
 use std::collections::HashMap;
 
+use crate::core::client::{Message, Sender};
+
+pub struct EventContext<'a> {
+    pub message: &'a Message,
+    pub sender: &'a mut Sender,
+}
+
+type EventHandler = dyn Fn(&mut EventContext);
+
 pub struct EventManager {
-    handlers: HashMap<String, String>,
+    handlers: HashMap<String, Vec<Box<EventHandler>>>,
 }
 
 impl EventManager {
@@ -11,13 +20,16 @@ impl EventManager {
         }
     }
 
-    pub fn register(&mut self, event: String, handler: String) {
-        self.handlers.insert(event, handler);
+    pub fn register(&mut self, event: impl Into<String>, handler: Box<EventHandler>) {
+        self.handlers
+            .entry(event.into())
+            .or_default()
+            .push(Box::new(handler));
     }
 
-    pub fn emit(&self, event: String, context: String) {
-        if let Some(handler) = self.handlers.get(&event) {
-            println!("{}: {}", handler, context);
+    pub fn dispatch(&self, event: &str, context: &mut EventContext) {
+        if let Some(handlers) = self.handlers.get(event) {
+            handlers.iter().for_each(|h| h(context));
         }
     }
 }

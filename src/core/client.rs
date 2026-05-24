@@ -5,7 +5,7 @@ use std::{
     net::TcpStream,
 };
 
-use crate::{config::Config, event_manager::EventManager};
+use crate::{config::Config, core::event_manager::EventContext, event_manager::EventManager};
 
 const USER_MESSAGE: &str = "USER poring 0 * :https://codeberg.org/parfentjev/poring/";
 
@@ -24,21 +24,21 @@ impl Client {
 
     pub fn start(&mut self) {
         let stream = TcpStream::connect(&self.config.server).expect("failed to connect");
-        let mut writer = stream.try_clone().expect("failed to create stream writer");
+        let mut sender = Sender::new(stream.try_clone().expect("failed to create stream writer"));
         let reader = BufReader::new(stream);
 
-        write(&mut writer, format_args!("NICK {}", self.config.nickname));
-        write(&mut writer, format_args!("{}", USER_MESSAGE));
+        sender.send(format_args!("NICK {}", self.config.nickname));
+        sender.send(format_args!("{}", USER_MESSAGE));
 
         for channel in &self.config.channels {
             let join_message = format_args!("JOIN {}", channel);
-            write(&mut writer, join_message);
+            sender.send(join_message);
         }
 
-        self.read_messages(writer, reader);
+        self.read_messages(reader, sender);
     }
 
-    fn read_messages(&mut self, mut writer: TcpStream, reader: BufReader<TcpStream>) {
+    fn read_messages(&mut self, reader: BufReader<TcpStream>, mut sender: Sender) {
         for line in reader.lines() {
             let raw_message = match line {
                 Ok(result) => result,
@@ -50,39 +50,47 @@ impl Client {
 
             println!("=> {}", raw_message);
             if let Some(message) = parse_raw_message(&raw_message) {
-                self.event_manager
-                    .emit(message.command, String::from("some context"));
-                // if let Some(text) = message.text
-                //     && message.command == "PING"
-                // {
-                //     write(&mut writer, format_args!("PONG :{}", text));
-                // }
+                self.event_manager.dispatch(
+                    &message.command,
+                    &mut EventContext {
+                        message: &message,
+                        sender: &mut sender,
+                    },
+                );
             }
         }
     }
 }
 
-// todo: move to IrcResponder
-fn write(writer: &mut TcpStream, message: fmt::Arguments<'_>) {
-    // todo: perhaps switch to try expression once it's available
-    let result: Result<(), Error> = (|| {
-        writer.write_fmt(message)?;
-        writer.write_all(b"\r\n")?;
+pub struct Sender {
+    writer: TcpStream,
+}
 
-        Ok(())
-    })();
+impl Sender {
+    fn new(writer: TcpStream) -> Self {
+        Sender { writer }
+    }
 
-    match result {
-        Ok(..) => println!("<= {}", message),
-        Err(e) => eprintln!("tcp write error: {}", e),
+    pub fn send(&mut self, message: fmt::Arguments<'_>) {
+        let result: Result<(), Error> = (|| {
+            self.writer.write_fmt(message)?;
+            self.writer.write_all(b"\r\n")?;
+
+            Ok(())
+        })();
+
+        match result {
+            Ok(..) => println!("<= {}", message),
+            Err(e) => eprintln!("tcp write error: {}", e),
+        }
     }
 }
 
-struct Message {
-    prefix: Option<String>,
-    command: String,
-    params: Vec<String>,
-    text: Option<String>,
+pub struct Message {
+    pub prefix: Option<String>,
+    pub command: String,
+    pub params: Vec<String>,
+    pub text: Option<String>,
 }
 
 fn parse_raw_message(raw_message: &str) -> Option<Message> {
