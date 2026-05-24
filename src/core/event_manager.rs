@@ -1,10 +1,24 @@
 use std::collections::HashMap;
 
-use crate::core::client::{Message, Sender};
+use crate::{
+    config::Config,
+    core::client::{Message, Sender},
+};
 
 pub struct EventContext<'a> {
+    pub config: &'a Config,
     pub message: &'a Message,
     pub sender: &'a mut Sender,
+}
+
+impl<'a> EventContext<'a> {
+    pub fn new(config: &'a Config, message: &'a Message, sender: &'a mut Sender) -> Self {
+        EventContext {
+            config,
+            message,
+            sender,
+        }
+    }
 }
 
 type EventHandler = dyn Fn(&mut EventContext);

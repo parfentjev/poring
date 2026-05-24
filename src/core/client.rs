@@ -10,8 +10,6 @@ use crate::{
     core::event_manager::{EventContext, EventManager},
 };
 
-const USER_MESSAGE: &str = "USER poring 0 * :https://codeberg.org/parfentjev/poring/";
-
 pub struct Client {
     config: Config,
     event_manager: EventManager,
@@ -26,22 +24,27 @@ impl Client {
     }
 
     pub fn start(&mut self) {
-        let stream = TcpStream::connect(&self.config.server).expect("failed to connect");
+        let Config { server, user, .. } = &self.config;
+
+        let stream = TcpStream::connect(&server.address).expect("failed to connect");
         let mut sender = Sender::new(stream.try_clone().expect("failed to create stream writer"));
         let reader = BufReader::new(stream);
 
-        sender.send(format_args!("NICK {}", self.config.nickname));
-        sender.send(format_args!("{}", USER_MESSAGE));
-
-        for channel in &self.config.channels {
-            let join_message = format_args!("JOIN {}", channel);
-            sender.send(join_message);
-        }
+        sender.send(format_args!("NICK {}", user.nickname));
+        sender.send(format_args!(
+            "USER {} 0 * :{}",
+            user.username, user.realname
+        ));
 
         self.read_messages(reader, sender);
     }
 
     fn read_messages(&mut self, reader: BufReader<TcpStream>, mut sender: Sender) {
+        let Client {
+            event_manager,
+            config,
+        } = self;
+
         for line in reader.lines() {
             let raw_message = match line {
                 Ok(result) => result,
@@ -53,12 +56,9 @@ impl Client {
 
             println!("=> {}", raw_message);
             if let Some(message) = parse_raw_message(&raw_message) {
-                self.event_manager.dispatch(
+                event_manager.dispatch(
                     &message.command,
-                    &mut EventContext {
-                        message: &message,
-                        sender: &mut sender,
-                    },
+                    &mut EventContext::new(&config, &message, &mut sender),
                 );
             }
         }
@@ -89,6 +89,11 @@ impl Sender {
     }
 }
 
+/*
+ * Some fields aren't used by message handlers yet.
+ * This isn't a problem that needs to be fixed.
+ */
+#[allow(unused)]
 pub struct Message {
     pub prefix: Option<String>,
     pub command: String,
@@ -120,7 +125,7 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
         params = tokens
             .iter()
             .take(text_begins)
-            .map(|p| p.to_string())
+            .map(|token| token.to_string())
             .collect();
 
         for (i, token) in tokens.range(text_begins..).enumerate() {
@@ -134,13 +139,13 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
             text.push_str(token);
         }
     } else {
-        params = tokens.iter().map(|p| p.to_string()).collect();
+        params = tokens.iter().map(|token| token.to_string()).collect();
     }
 
     Some(Message {
         prefix,
         command,
         params,
-        text: Some(text),
+        text: if text.is_empty() { None } else { Some(text) },
     })
 }
