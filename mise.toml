@@ -3,6 +3,3 @@ rust = "1.95.0"
 
 [env]
 _.file = ".env"
-
-[tasks."start"]
-run = "cargo run"
