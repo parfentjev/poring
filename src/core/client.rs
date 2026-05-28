@@ -3,6 +3,7 @@ use std::{
     fmt,
     io::{BufRead, BufReader, Error, Write},
     net::TcpStream,
+    time::Duration,
 };
 
 use crate::{
@@ -32,6 +33,10 @@ impl Client {
         loop {
             let stream =
                 TcpStream::connect(&self.config.server.address).expect("failed to connect");
+            stream
+                .set_read_timeout(Some(Duration::from_mins(10)))
+                .expect("failed to set read timeout");
+
             let mut sender =
                 Sender::new(stream.try_clone().expect("failed to create stream writer"));
             let reader = BufReader::new(stream);
