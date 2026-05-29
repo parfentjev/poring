@@ -63,16 +63,9 @@ impl Default for AuthenticatorConfig {
     }
 }
 
+#[derive(Default)]
 pub struct HandlerConfig {
     pub raweceek: RaweceekConfig,
-}
-
-impl Default for HandlerConfig {
-    fn default() -> Self {
-        Self {
-            raweceek: RaweceekConfig::default(),
-        }
-    }
 }
 
 pub struct RaweceekConfig {

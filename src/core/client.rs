@@ -67,7 +67,7 @@ impl Client {
             if let Some(message) = parse_raw_message(&raw_message) {
                 event_manager.dispatch(
                     &message.command,
-                    &mut EventContext::new(&config, &message, &mut sender),
+                    &mut EventContext::new(config, &message, &mut sender),
                 );
             }
         }
@@ -122,10 +122,7 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
         _ => None,
     };
 
-    let Some(command) = tokens.pop_front() else {
-        return None;
-    };
-
+    let command = tokens.pop_front()?;
     let params: Vec<String>;
     let mut text = String::new();
 
