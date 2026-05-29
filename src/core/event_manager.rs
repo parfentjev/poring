@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use crate::{
     config::Config,
@@ -8,7 +8,7 @@ use crate::{
 pub struct EventContext<'a> {
     pub config: &'a Config,
     pub message: &'a Message,
-    pub sender: &'a mut Sender,
+    sender: &'a mut Sender,
 }
 
 impl<'a> EventContext<'a> {
@@ -18,6 +18,10 @@ impl<'a> EventContext<'a> {
             message,
             sender,
         }
+    }
+
+    pub fn send(&mut self, message: impl fmt::Display) {
+        self.sender.send(message);
     }
 }
 

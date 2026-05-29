@@ -83,10 +83,10 @@ impl Sender {
         Self { writer }
     }
 
-    pub fn send(&mut self, message: fmt::Arguments<'_>) {
+    pub fn send(&mut self, message: impl fmt::Display) {
         let result: Result<(), Error> = (|| {
-            self.writer.write_fmt(message)?;
-            self.writer.write_all(b"\r\n")?;
+            write!(self.writer, "{}\r\n", message)?;
+            self.writer.flush()?;
 
             Ok(())
         })();

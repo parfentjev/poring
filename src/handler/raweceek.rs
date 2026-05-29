@@ -45,7 +45,7 @@ fn handle(ctx: &mut EventContext) -> Result<(), String> {
         .first()
         .ok_or("channel is undefined in message params")?;
 
-    ctx.sender.send(format_args!(
+    ctx.send(format_args!(
         "PRIVMSG {} :\x02{}\x02 begins in {} 🎉",
         channel, response.summary, countdown.value
     ));
