@@ -122,15 +122,14 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
         _ => None,
     };
 
-    let command = match tokens.pop_front() {
-        Some(token) => token.to_string(),
-        None => return None,
+    let Some(command) = tokens.pop_front() else {
+        return None;
     };
 
     let params: Vec<String>;
     let mut text = String::new();
 
-    if let Some(text_begins) = tokens.iter().position(|t| t.starts_with(':')) {
+    if let Some(text_begins) = tokens.iter().position(|token| token.starts_with(':')) {
         params = tokens
             .iter()
             .take(text_begins)
@@ -153,7 +152,7 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
 
     Some(Message {
         prefix,
-        command,
+        command: command.to_string(),
         params,
         text,
     })
