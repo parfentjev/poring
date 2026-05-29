@@ -1,8 +1,8 @@
-FROM oven/bun:1.3.13-alpine
-WORKDIR /app
-
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
+FROM rust:1.95.0-slim-trixie AS builder
+WORKDIR /usr/src/poring
 COPY . .
+RUN cargo install --path .
 
-ENTRYPOINT [ "bun", "start" ]
+FROM debian:trixie-slim
+COPY --from=builder /usr/local/cargo/bin/poring /usr/local/bin/app
+CMD ["app"]

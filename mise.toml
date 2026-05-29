@@ -1,9 +1,5 @@
+[tools]
+rust = "1.95.0"
+
 [env]
 _.file = ".env"
-
-[tasks."start"]
-run = "bun start"
-
-[tasks."lint"]
-run = "tsc --noEmit"
-description = "Run linter"
