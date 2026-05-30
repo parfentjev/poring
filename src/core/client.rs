@@ -113,6 +113,7 @@ fn parse_raw_message(raw_message: &str) -> Option<Message> {
         _ => None,
     };
 
+    // an empty message? something is wrong - return
     let command = tokens.pop_front()?;
     let params: Vec<String>;
     let mut text = String::new();
