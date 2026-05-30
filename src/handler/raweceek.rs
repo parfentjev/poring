@@ -21,7 +21,7 @@ pub fn raweceek_handler(ctx: &mut EventContext) {
     }
 
     if let Err(error) = handle(ctx) {
-        eprintln!("{}", error);
+        eprintln!("raweceek_handler error: {}", error);
     }
 }
 

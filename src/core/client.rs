@@ -1,10 +1,12 @@
 use std::{
     collections::VecDeque,
     fmt,
-    io::{BufRead, BufReader, Error, Write},
+    io::{BufRead, BufReader, Write},
     net::TcpStream,
     time::Duration,
 };
+
+use anyhow::Result;
 
 use crate::{
     config::Config,
@@ -27,21 +29,17 @@ impl Client {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> Result<()> {
         authenticator::init(&mut self.event_manager);
 
         loop {
-            let stream =
-                TcpStream::connect(&self.config.server.address).expect("failed to connect");
-            stream
-                .set_read_timeout(Some(Duration::from_mins(10)))
-                .expect("failed to set read timeout");
+            let stream = TcpStream::connect(&self.config.server.address)?;
+            stream.set_read_timeout(Some(Duration::from_mins(10)))?;
 
-            let mut sender =
-                Sender::new(stream.try_clone().expect("failed to create stream writer"));
+            let mut sender = Sender::new(stream.try_clone()?);
             let reader = BufReader::new(stream);
 
-            authenticator::authenticate(&mut sender);
+            authenticator::authenticate(&mut sender)?;
             self.read_messages(reader, sender);
 
             println!("disconnected");
@@ -57,8 +55,8 @@ impl Client {
         for line in reader.lines() {
             let raw_message = match line {
                 Ok(result) => result,
-                Err(e) => {
-                    eprintln!("read line error: {}", e);
+                Err(error) => {
+                    eprintln!("read line error: {}", error);
                     continue;
                 }
             };
@@ -83,18 +81,11 @@ impl Sender {
         Self { writer }
     }
 
-    pub fn send(&mut self, message: impl fmt::Display) {
-        let result: Result<(), Error> = (|| {
-            write!(self.writer, "{}\r\n", message)?;
-            self.writer.flush()?;
-
-            Ok(())
-        })();
-
-        match result {
-            Ok(..) => println!("<= {}", message),
-            Err(e) => eprintln!("tcp write error: {}", e),
-        }
+    pub fn send(&mut self, message: impl fmt::Display) -> Result<()> {
+        write!(self.writer, "{}\r\n", message)?;
+        self.writer.flush()?;
+        println!("<= {}", message);
+        Ok(())
     }
 }
 

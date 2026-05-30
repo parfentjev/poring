@@ -22,8 +22,8 @@ pub struct ServerConfig {
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
-            address: get("SERVER_ADDRESS"),
-            autojoin: get("SERVER_AUTOJOIN")
+            address: env("SERVER_ADDRESS"),
+            autojoin: env("SERVER_AUTOJOIN")
                 .split(',')
                 .map(str::to_string)
                 .collect(),
@@ -41,9 +41,9 @@ pub struct UserConfig {
 impl Default for UserConfig {
     fn default() -> Self {
         Self {
-            nickname: get("USER_NICKNAME"),
-            username: get("USER_USERNAME"),
-            realname: get("USER_REALNAME"),
+            nickname: env("USER_NICKNAME"),
+            username: env("USER_USERNAME"),
+            realname: env("USER_REALNAME"),
             sasl: AuthenticatorConfig::default(),
         }
     }
@@ -57,8 +57,8 @@ pub struct AuthenticatorConfig {
 impl Default for AuthenticatorConfig {
     fn default() -> Self {
         Self {
-            username: get("USER_SASL_USERNAME"),
-            password: get("USER_SASL_PASSWORD"),
+            username: env("USER_SASL_USERNAME"),
+            password: env("USER_SASL_PASSWORD"),
         }
     }
 }
@@ -75,11 +75,11 @@ pub struct RaweceekConfig {
 impl Default for RaweceekConfig {
     fn default() -> Self {
         Self {
-            url: get("HANDLER_RAWECEEK_URL"),
+            url: env("HANDLER_RAWECEEK_URL"),
         }
     }
 }
 
-fn get(key: &str) -> String {
+fn env(key: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| panic!("environment variable '{}' is missing", key))
 }

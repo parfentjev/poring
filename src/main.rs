@@ -13,5 +13,7 @@ fn main() {
 
     let config = Config::new();
     let mut client = Client::new(config, event_manager);
-    client.start();
+    if let Err(error) = client.start() {
+        panic!("irc client error: {}", error);
+    }
 }

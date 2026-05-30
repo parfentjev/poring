@@ -21,7 +21,9 @@ impl<'a> EventContext<'a> {
     }
 
     pub fn send(&mut self, message: impl fmt::Display) {
-        self.sender.send(message);
+        if let Err(error) = self.sender.send(message) {
+            eprintln!("failed to send a message: {}", error);
+        }
     }
 }
 
