@@ -12,7 +12,7 @@ pub struct Message {
     pub text: String,
 }
 
-pub fn parse_raw_message(raw_message: &str) -> Option<Message> {
+pub fn parse_raw(raw_message: &str) -> Option<Message> {
     let mut tokens = raw_message.split(' ').collect::<VecDeque<_>>();
 
     let prefix = match tokens.front() {
