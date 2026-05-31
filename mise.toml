@@ -20,7 +20,7 @@ run = '''
 git add .
 git commit -m "${usage_message}"
 
-if [ ${useg_p} ]; then
+if [ "${usage_push}" = true ]; then
   git push
 fi
 '''
