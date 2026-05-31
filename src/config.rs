@@ -1,17 +1,8 @@
+#[derive(Default)]
 pub struct Config {
     pub server: ServerConfig,
     pub user: UserConfig,
     pub handler: HandlerConfig,
-}
-
-impl Config {
-    pub fn new() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            user: UserConfig::default(),
-            handler: HandlerConfig::default(),
-        }
-    }
 }
 
 pub struct ServerConfig {

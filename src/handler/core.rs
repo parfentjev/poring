@@ -1,4 +1,4 @@
-use crate::core::event_manager::EventContext;
+use crate::client::event_manager::EventContext;
 
 pub fn welcome_handler(ctx: &mut EventContext) {
     ctx.config

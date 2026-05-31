@@ -1,9 +1,9 @@
 use anyhow::Result;
 use base64::{Engine, engine::general_purpose::STANDARD};
 
-use crate::core::{
-    client::Sender,
+use crate::client::{
     event_manager::{EventContext, EventManager},
+    irc::Sender,
 };
 
 pub fn init(event_manager: &mut EventManager) {

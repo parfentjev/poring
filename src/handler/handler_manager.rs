@@ -1,5 +1,5 @@
 use crate::{
-    core::event_manager::EventManager,
+    client::event_manager::EventManager,
     handler::{
         core::{ping_handler, welcome_handler},
         raweceek::raweceek_handler,

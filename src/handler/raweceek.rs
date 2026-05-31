@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::core::event_manager::EventContext;
+use crate::client::event_manager::EventContext;
 
 #[derive(Deserialize, Debug)]
 struct Response {

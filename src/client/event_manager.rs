@@ -1,8 +1,8 @@
 use std::{collections::HashMap, fmt};
 
 use crate::{
+    client::{irc::Sender, message::Message},
     config::Config,
-    core::client::{Message, Sender},
 };
 
 pub struct EventContext<'a> {
@@ -29,17 +29,12 @@ impl<'a> EventContext<'a> {
 
 type EventHandler = dyn Fn(&mut EventContext);
 
+#[derive(Default)]
 pub struct EventManager {
     handlers: HashMap<String, Vec<Box<EventHandler>>>,
 }
 
 impl EventManager {
-    pub fn new() -> Self {
-        Self {
-            handlers: HashMap::new(),
-        }
-    }
-
     pub fn register(&mut self, event: impl Into<String>, handler: Box<EventHandler>) {
         self.handlers.entry(event.into()).or_default().push(handler);
     }

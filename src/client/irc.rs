@@ -1,5 +1,4 @@
 use std::{
-    collections::VecDeque,
     fmt,
     io::{BufRead, BufReader, Write},
     net::TcpStream,
@@ -9,11 +8,12 @@ use std::{
 use anyhow::Result;
 
 use crate::{
-    config::Config,
-    core::{
+    client::{
         authenticator,
         event_manager::{EventContext, EventManager},
+        message::parse_raw_message,
     },
+    config::Config,
 };
 
 pub struct Client {
@@ -87,62 +87,4 @@ impl Sender {
         println!("<= {}", message);
         Ok(())
     }
-}
-
-/*
- * Some fields aren't used by message handlers yet.
- * This isn't a problem that needs to be fixed.
- */
-#[allow(unused)]
-pub struct Message {
-    pub prefix: Option<String>,
-    pub command: String,
-    pub params: Vec<String>,
-    pub text: String,
-}
-
-fn parse_raw_message(raw_message: &str) -> Option<Message> {
-    let mut tokens = raw_message.split(' ').collect::<VecDeque<_>>();
-
-    let prefix = match tokens.front() {
-        Some(token) if token.starts_with(':') => {
-            let prefix = token[1..].to_string();
-            tokens.pop_front();
-            Some(prefix)
-        }
-        _ => None,
-    };
-
-    // an empty message? something is wrong - return
-    let command = tokens.pop_front()?;
-    let params: Vec<String>;
-    let mut text = String::new();
-
-    if let Some(text_begins) = tokens.iter().position(|token| token.starts_with(':')) {
-        params = tokens
-            .iter()
-            .take(text_begins)
-            .map(|token| token.to_string())
-            .collect();
-
-        for (i, token) in tokens.range(text_begins..).enumerate() {
-            // need to strip that `:` at the front
-            if i == 0 {
-                text.push_str(&token[1..]);
-                continue;
-            }
-
-            text.push(' ');
-            text.push_str(token);
-        }
-    } else {
-        params = tokens.iter().map(|token| token.to_string()).collect();
-    }
-
-    Some(Message {
-        prefix,
-        command: command.to_string(),
-        params,
-        text,
-    })
 }
