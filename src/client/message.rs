@@ -13,7 +13,7 @@ pub struct Message {
 }
 
 pub fn parse_raw(raw_message: &str) -> Option<Message> {
-    let mut tokens = raw_message.split(' ').collect::<VecDeque<_>>();
+    let mut tokens = raw_message.split_whitespace().collect::<VecDeque<_>>();
 
     let prefix = match tokens.front() {
         Some(token) if token.starts_with(':') => {
