@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt};
 
+use anyhow::Result;
+
 use crate::{
     client::{irc::Sender, message::Message},
     config::Config,
@@ -27,7 +29,7 @@ impl<'a> EventContext<'a> {
     }
 }
 
-type EventHandler = dyn Fn(&mut EventContext);
+type EventHandler = dyn Fn(&mut EventContext) -> Result<()>;
 
 #[derive(Default)]
 pub struct EventManager {
@@ -41,7 +43,9 @@ impl EventManager {
 
     pub fn dispatch(&self, event: &str, context: &mut EventContext) {
         if let Some(handlers) = self.handlers.get(event) {
-            handlers.iter().for_each(|h| h(context));
+            handlers.iter().for_each(|handler| {
+                let _ = handler(context).inspect_err(|e| eprintln!("handler err: {}", e));
+            });
         }
     }
 }

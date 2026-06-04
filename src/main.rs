@@ -1,3 +1,5 @@
+use std::process;
+
 use poring::{
     client::event_manager::EventManager, client::irc::Client, config::Config,
     handler::handler_manager,
@@ -10,6 +12,7 @@ fn main() {
     let config = Config::default();
     let mut client = Client::new(config, event_manager);
     if let Err(error) = client.start() {
-        panic!("irc client error: {}", error);
+        eprintln!("irc client error: {}", error);
+        process::exit(1);
     }
 }

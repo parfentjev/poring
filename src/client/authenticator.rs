@@ -16,22 +16,26 @@ pub fn authenticate(sender: &mut Sender) -> Result<()> {
     sender.send("CAP REQ :sasl")
 }
 
-fn handle_cap(ctx: &mut EventContext) {
+fn handle_cap(ctx: &mut EventContext) -> Result<()> {
     if ctx.message.params.get(1).is_some_and(|p| p == "ACK") {
         ctx.send("AUTHENTICATE PLAIN");
     }
+
+    Ok(())
 }
 
-fn handle_authenticate(ctx: &mut EventContext) {
+fn handle_authenticate(ctx: &mut EventContext) -> Result<()> {
     if ctx.message.params.first().is_some_and(|p| p == "+") {
         let sasl = &ctx.config.user.sasl;
         let credentials = STANDARD.encode(format!("\0{}\0{}", sasl.username, sasl.password));
 
         ctx.send(format_args!("AUTHENTICATE {}", credentials));
     }
+
+    Ok(())
 }
 
-fn handle_success(ctx: &mut EventContext) {
+fn handle_success(ctx: &mut EventContext) -> Result<()> {
     let user = &ctx.config.user;
 
     ctx.send("CAP END");
@@ -40,4 +44,6 @@ fn handle_success(ctx: &mut EventContext) {
         "USER {} 0 * :{}",
         user.username, user.realname
     ));
+
+    Ok(())
 }

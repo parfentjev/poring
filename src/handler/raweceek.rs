@@ -1,3 +1,4 @@
+use anyhow::{Result, anyhow};
 use serde::Deserialize;
 
 use crate::client::event_manager::EventContext;
@@ -15,35 +16,27 @@ struct Countdown {
     value: String,
 }
 
-pub fn raweceek_handler(ctx: &mut EventContext) {
+pub fn raweceek_handler(ctx: &mut EventContext) -> Result<()> {
     if ctx.message.text != "!ceeks" {
-        return;
+        return Ok(());
     }
 
-    if let Err(error) = handle(ctx) {
-        eprintln!("raweceek_handler error: {}", error);
-    }
-}
-
-fn handle(ctx: &mut EventContext) -> Result<(), String> {
     let response = ureq::get(&ctx.config.handler.raweceek.url)
-        .call()
-        .map_err(|e| format!("GET request failed: {}", e))?
+        .call()?
         .body_mut()
-        .read_json::<Response>()
-        .map_err(|e| format!("failed to deserialize response: {}", e))?;
+        .read_json::<Response>()?;
 
     let countdown = response
         .countdowns
         .iter()
         .find(|countdown| countdown.kind == "CEEKS")
-        .ok_or_else(|| format!("CEEKS isn't in response: {:#?}", response))?;
+        .ok_or_else(|| anyhow!("CEEKS countdown is missing in the response"))?;
 
     let channel = ctx
         .message
         .params
         .first()
-        .ok_or("channel is undefined in message params")?;
+        .ok_or_else(|| anyhow!("channel is undefined in params"))?;
 
     ctx.send(format_args!(
         "PRIVMSG {} :\x02{}\x02 begins in {} 🎉",
