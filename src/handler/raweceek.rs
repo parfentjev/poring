@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result};
 use serde::Deserialize;
 
 use crate::client::event_manager::EventContext;
@@ -30,13 +30,13 @@ pub fn raweceek_handler(ctx: &mut EventContext) -> Result<()> {
         .countdowns
         .iter()
         .find(|countdown| countdown.kind == "CEEKS")
-        .ok_or_else(|| anyhow!("CEEKS countdown is missing in the response"))?;
+        .context("CEEKS countdown is missing in the response")?;
 
     let channel = ctx
         .message
         .params
         .first()
-        .ok_or_else(|| anyhow!("channel is undefined in params"))?;
+        .context("channel is undefined in params")?;
 
     ctx.send(format_args!(
         "PRIVMSG {} :\x02{}\x02 begins in {} 🎉",
