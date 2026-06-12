@@ -4,6 +4,7 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use crate::client::{
     event_manager::{EventContext, EventManager},
     irc::Sender,
+    message::Message,
 };
 
 pub fn init(event_manager: &mut EventManager) {
@@ -17,7 +18,9 @@ pub fn authenticate(sender: &mut Sender) -> Result<()> {
 }
 
 fn handle_cap(ctx: &mut EventContext) -> Result<()> {
-    if ctx.message.params.get(1).is_some_and(|p| p == "ACK") {
+    if let Message::Raw { raw } = ctx.message
+        && raw.params.get(1).is_some_and(|p| p == "ACK")
+    {
         ctx.send("AUTHENTICATE PLAIN");
     }
 
@@ -25,7 +28,9 @@ fn handle_cap(ctx: &mut EventContext) -> Result<()> {
 }
 
 fn handle_authenticate(ctx: &mut EventContext) -> Result<()> {
-    if ctx.message.params.first().is_some_and(|p| p == "+") {
+    if let Message::Raw { raw } = ctx.message
+        && raw.params.first().is_some_and(|p| p == "+")
+    {
         let sasl = &ctx.config.user.sasl;
         let credentials = STANDARD.encode(format!("\0{}\0{}", sasl.username, sasl.password));
 

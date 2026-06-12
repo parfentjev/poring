@@ -11,7 +11,7 @@ use crate::{
     client::{
         authenticator,
         event_manager::{EventContext, EventManager},
-        message,
+        message::Message,
     },
     config::Config,
 };
@@ -62,9 +62,9 @@ impl Client {
             };
 
             println!("=> {}", raw_message);
-            if let Some(message) = message::parse_raw(&raw_message) {
+            if let Some(message) = Message::build(raw_message) {
                 event_manager.dispatch(
-                    &message.command,
+                    message.command(),
                     &mut EventContext::new(config, &message, &mut sender),
                 );
             }
