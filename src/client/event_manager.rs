@@ -42,10 +42,12 @@ impl EventManager {
     }
 
     pub fn dispatch(&self, event: &str, context: &mut EventContext) {
-        if let Some(handlers) = self.handlers.get(event) {
-            handlers.iter().for_each(|handler| {
-                let _ = handler(context).inspect_err(|e| eprintln!("handler err: {}", e));
-            });
-        }
+        let Some(handlers) = self.handlers.get(event) else {
+            return;
+        };
+
+        handlers
+            .iter()
+            .for_each(|h| _ = h(context).inspect_err(|e| eprintln!("handler err: {}", e)));
     }
 }
