@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::Result;
+use log::{debug, info, warn};
 
 use crate::{
     client::{
@@ -36,13 +37,15 @@ impl Client {
             let stream = TcpStream::connect(&self.config.server.address)?;
             stream.set_read_timeout(Some(Duration::from_mins(10)))?;
 
+            info!("connected to the server");
+
             let mut sender = Sender::new(stream.try_clone()?);
             let reader = BufReader::new(stream);
 
             authenticator::authenticate(&mut sender)?;
             self.read_messages(reader, sender);
 
-            println!("disconnected");
+            info!("disconnected from the server");
         }
     }
 
@@ -56,12 +59,12 @@ impl Client {
             let raw_message = match line {
                 Ok(result) => result,
                 Err(error) => {
-                    eprintln!("read line error: {}", error);
+                    warn!("read line error: {error}");
                     continue;
                 }
             };
 
-            println!("=> {}", raw_message);
+            debug!("=> {raw_message}");
             if let Some(message) = Message::build(raw_message) {
                 event_manager.dispatch(
                     message.command(),
@@ -84,7 +87,7 @@ impl Sender {
     pub fn send(&mut self, message: impl fmt::Display) -> Result<()> {
         write!(self.writer, "{}\r\n", message)?;
         self.writer.flush()?;
-        println!("<= {}", message);
+        debug!("<= {message}");
         Ok(())
     }
 }

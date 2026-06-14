@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt};
 
 use anyhow::Result;
+use log::warn;
 
 use crate::{
     client::{irc::Sender, message::Message},
@@ -24,7 +25,7 @@ impl<'a> EventContext<'a> {
 
     pub fn send(&mut self, message: impl fmt::Display) {
         if let Err(error) = self.sender.send(message) {
-            eprintln!("failed to send a message: {}", error);
+            warn!("failed to send a message: {error}");
         }
     }
 }
@@ -41,13 +42,13 @@ impl EventManager {
         self.handlers.entry(event.into()).or_default().push(handler);
     }
 
-    pub fn dispatch(&self, event: &str, context: &mut EventContext) {
+    pub fn dispatch(&self, event: &str, ctx: &mut EventContext) {
         let Some(handlers) = self.handlers.get(event) else {
             return;
         };
 
         handlers
             .iter()
-            .for_each(|h| _ = h(context).inspect_err(|e| eprintln!("handler err: {}", e)));
+            .for_each(|h| _ = h(ctx).inspect_err(|e| warn!("handler returned error: {e}")));
     }
 }

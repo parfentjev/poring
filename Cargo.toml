@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 base64 = "0.22.1"
+env_logger = { version = "0.11.10", default-features = false }
+log = "0.4.32"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 ureq = { version = "3.3.0", features = ["json"] }
