@@ -7,7 +7,9 @@ use poring::{
 };
 
 fn main() {
-    env_logger::init();
+    env_logger::builder()
+        .target(env_logger::Target::Stdout)
+        .init();
 
     let mut event_manager = EventManager::default();
     handler_manager::register_handlers(&mut event_manager);

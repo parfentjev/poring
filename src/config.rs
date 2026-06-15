@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 #[derive(Default)]
 pub struct Config {
     pub server: ServerConfig,
@@ -8,6 +10,7 @@ pub struct Config {
 pub struct ServerConfig {
     pub address: String,
     pub autojoin: Vec<String>,
+    pub timeout: Duration,
 }
 
 impl Default for ServerConfig {
@@ -18,6 +21,7 @@ impl Default for ServerConfig {
                 .split(',')
                 .map(str::to_string)
                 .collect(),
+            timeout: Duration::from_mins(env_or("SERVER_TIMEOUT_MINUTES", "10").parse().unwrap()),
         }
     }
 }
@@ -73,4 +77,8 @@ impl Default for RaweceekConfig {
 
 fn env(key: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| panic!("environment variable '{}' is missing", key))
+}
+
+fn env_or(key: &str, default: &str) -> String {
+    std::env::var(key).unwrap_or(default.to_owned())
 }
