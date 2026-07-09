@@ -1,11 +1,11 @@
 use std::{
+    error::Error,
     fmt,
     io::{self, BufRead, BufReader, Write},
     net::TcpStream,
     time::{Duration, Instant},
 };
 
-use anyhow::Result;
 use log::{debug, info};
 
 use crate::{
@@ -17,7 +17,7 @@ use crate::{
     config::Config,
 };
 
-const POLL_INTERVAL: Duration = Duration::from_secs(10);
+const POLL_INTERVAL: Duration = Duration::from_secs(60);
 
 pub struct Client {
     config: Config,
@@ -36,7 +36,8 @@ impl Client {
         }
     }
 
-    pub fn start(&mut self) -> Result<()> {
+    // todo: add proper error type
+    pub fn start(&mut self) -> Result<(), Box<dyn Error>> {
         authenticator::init(&mut self.event_manager);
 
         loop {
@@ -116,7 +117,8 @@ impl Sender {
         Self { writer }
     }
 
-    pub fn send(&mut self, message: impl fmt::Display) -> Result<()> {
+    // todo: add proper error type
+    pub fn send(&mut self, message: impl fmt::Display) -> Result<(), Box<dyn Error>> {
         write!(self.writer, "{}\r\n", message)?;
         self.writer.flush()?;
         debug!("<= {message}");

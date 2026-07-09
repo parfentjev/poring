@@ -1,8 +1,7 @@
-use anyhow::Result;
 use base64::{Engine, engine::general_purpose::STANDARD};
 
 use crate::client::{
-    event_manager::{EventContext, EventManager},
+    event_manager::{EventContext, EventHandlerResult, EventManager},
     irc::Sender,
     message::Message,
 };
@@ -13,11 +12,11 @@ pub fn init(event_manager: &mut EventManager) {
     event_manager.register("903", Box::new(handle_success));
 }
 
-pub fn authenticate(sender: &mut Sender) -> Result<()> {
+pub fn authenticate(sender: &mut Sender) -> EventHandlerResult {
     sender.send("CAP REQ :sasl")
 }
 
-fn handle_cap(ctx: &mut EventContext) -> Result<()> {
+fn handle_cap(ctx: &mut EventContext) -> EventHandlerResult {
     if let Message::Raw { raw } = ctx.message
         && raw.params.get(1).is_some_and(|p| p == "ACK")
     {
@@ -27,7 +26,7 @@ fn handle_cap(ctx: &mut EventContext) -> Result<()> {
     Ok(())
 }
 
-fn handle_authenticate(ctx: &mut EventContext) -> Result<()> {
+fn handle_authenticate(ctx: &mut EventContext) -> EventHandlerResult {
     if let Message::Raw { raw } = ctx.message
         && raw.params.first().is_some_and(|p| p == "+")
     {
@@ -40,7 +39,7 @@ fn handle_authenticate(ctx: &mut EventContext) -> Result<()> {
     Ok(())
 }
 
-fn handle_success(ctx: &mut EventContext) -> Result<()> {
+fn handle_success(ctx: &mut EventContext) -> EventHandlerResult {
     let user = &ctx.config.user;
 
     ctx.send("CAP END");

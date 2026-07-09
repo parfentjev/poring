@@ -1,6 +1,5 @@
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, error::Error, fmt};
 
-use anyhow::Result;
 use log::warn;
 
 use crate::{
@@ -30,7 +29,9 @@ impl<'a> EventContext<'a> {
     }
 }
 
-type EventHandler = dyn Fn(&mut EventContext) -> Result<()>;
+pub type EventHandlerResult = Result<(), Box<dyn Error>>;
+
+type EventHandler = dyn Fn(&mut EventContext) -> EventHandlerResult;
 
 #[derive(Default)]
 pub struct EventManager {

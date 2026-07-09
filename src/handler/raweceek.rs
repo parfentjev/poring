@@ -1,7 +1,9 @@
-use anyhow::{Context, Result};
 use serde::Deserialize;
 
-use crate::client::{event_manager::EventContext, message::Message};
+use crate::client::{
+    event_manager::{EventContext, EventHandlerResult},
+    message::Message,
+};
 
 #[derive(Deserialize, Debug)]
 struct Response {
@@ -16,7 +18,7 @@ struct Countdown {
     value: String,
 }
 
-pub fn raweceek_handler(ctx: &mut EventContext) -> Result<()> {
+pub fn raweceek_handler(ctx: &mut EventContext) -> EventHandlerResult {
     let Message::PrivateMessage { receiver, text, .. } = ctx.message else {
         return Ok(());
     };
@@ -34,7 +36,7 @@ pub fn raweceek_handler(ctx: &mut EventContext) -> Result<()> {
         .countdowns
         .iter()
         .find(|countdown| countdown.kind == "CEEKS")
-        .context("CEEKS countdown is missing in the response")?;
+        .ok_or("CEEKS countdown is missing in the response")?;
 
     ctx.send(format_args!(
         "PRIVMSG {} :\x02{}\x02 begins in {} 🎉",
