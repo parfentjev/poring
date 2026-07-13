@@ -1,18 +1,18 @@
 use std::{
-    error::Error,
     fmt,
     io::{self, BufRead, BufReader, Write},
     net::TcpStream,
     time::{Duration, Instant},
 };
 
-use log::{debug, info};
+use anyhow::Result;
+use log::{debug, info, warn};
 
 use crate::{
     client::{
-        authenticator,
+        authenticator::Authenticator,
         event_manager::{EventContext, EventManager},
-        message::Message,
+        message::{Authenticate, Cap, Ping, PrivateMessage, RawMessage, SaslSuccess, Welcome},
     },
     config::Config,
 };
@@ -22,6 +22,7 @@ const POLL_INTERVAL: Duration = Duration::from_secs(60);
 pub struct Client {
     config: Config,
     event_manager: EventManager,
+    authenticator: Authenticator,
     connected_at: Option<Instant>,
     last_ping: Option<Instant>,
 }
@@ -31,15 +32,13 @@ impl Client {
         Self {
             config,
             event_manager,
+            authenticator: Authenticator::default(),
             connected_at: None,
             last_ping: None,
         }
     }
 
-    // todo: add proper error type
-    pub fn start(&mut self) -> Result<(), Box<dyn Error>> {
-        authenticator::init(&mut self.event_manager);
-
+    pub fn start(&mut self) -> Result<()> {
         loop {
             self.connected_at = Some(Instant::now());
             self.last_ping = None;
@@ -51,7 +50,8 @@ impl Client {
             let mut sender = Sender::new(stream.try_clone()?);
             let reader = BufReader::new(stream);
 
-            authenticator::authenticate(&mut sender)?;
+            self.authenticator
+                .request_sasl(&mut self.event_manager, &mut sender)?;
             self.read_messages(reader, sender);
 
             info!("disconnected from the server");
@@ -81,18 +81,43 @@ impl Client {
     }
 
     fn notify_handlers(&mut self, raw_message: String, sender: &mut Sender) {
-        let Some(message) = Message::build(raw_message) else {
-            return;
+        let raw_message = match raw_message.parse::<RawMessage>() {
+            Ok(raw_message) => raw_message,
+            Err(e) => {
+                warn!("failed to parse raw_message: {e}");
+                return;
+            }
         };
 
-        if message.command() == "PING" {
-            self.last_ping = Some(Instant::now());
+        // todo: I don't think the client itself should be responsible for this mapping.
+        // The client's essential job is to manage tcp streams.
+        // Perhaps I need to add some separate router to manage this logic.
+        match raw_message.command() {
+            "CAP" => self.dispatch_message::<Cap>(raw_message, sender),
+            "AUTHENTICATE" => self.dispatch_message::<Authenticate>(raw_message, sender),
+            "903" => self.dispatch_message::<SaslSuccess>(raw_message, sender),
+            "001" => self.dispatch_message::<Welcome>(raw_message, sender),
+            "PING" => {
+                self.last_ping = Some(Instant::now());
+                self.dispatch_message::<Ping>(raw_message, sender);
+            }
+            "PRIVMSG" => self.dispatch_message::<PrivateMessage>(raw_message, sender),
+            _ => self.dispatch_message::<RawMessage>(raw_message, sender),
         }
+    }
 
-        self.event_manager.dispatch(
-            message.command(),
-            &mut EventContext::new(&self.config, &message, sender),
-        );
+    fn dispatch_message<E>(&self, raw_message: RawMessage, sender: &mut Sender)
+    where
+        E: TryFrom<RawMessage> + 'static,
+        E::Error: fmt::Display,
+    {
+        match E::try_from(raw_message) {
+            Ok(message) => {
+                let mut ctx = EventContext::new(&self.config, &message, sender);
+                self.event_manager.dispatch(&mut ctx);
+            }
+            Err(e) => warn!("failed to convert raw_message: {e}"),
+        }
     }
 
     fn connection_timed_out(&self) -> bool {
@@ -117,8 +142,7 @@ impl Sender {
         Self { writer }
     }
 
-    // todo: add proper error type
-    pub fn send(&mut self, message: impl fmt::Display) -> Result<(), Box<dyn Error>> {
+    pub fn send(&mut self, message: impl fmt::Display) -> Result<()> {
         write!(self.writer, "{}\r\n", message)?;
         self.writer.flush()?;
         debug!("<= {message}");

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.103"
 base64 = "0.22.1"
 env_logger = { version = "0.11.10", default-features = false }
 log = "0.4.32"
