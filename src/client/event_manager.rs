@@ -40,6 +40,8 @@ pub struct EventManager {
     event_handlers_map: HashMap<TypeId, Box<dyn Any>>,
 }
 
+// This solution is built upon examples shared here:
+// https://willcrichton.net/rust-api-type-patterns/registries.html
 impl EventManager {
     pub fn new() -> EventManager {
         EventManager {
