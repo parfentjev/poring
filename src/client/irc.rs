@@ -89,6 +89,9 @@ impl Client {
             }
         };
 
+        // todo: I don't think the client itself should be responsible for this mapping.
+        // The client's essential job is to manage tcp streams.
+        // Perhaps I need to add some separate router to manage this logic.
         match raw_message.command() {
             "CAP" => self.dispatch_message::<Cap>(raw_message, sender),
             "AUTHENTICATE" => self.dispatch_message::<Authenticate>(raw_message, sender),
