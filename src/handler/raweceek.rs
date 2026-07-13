@@ -1,8 +1,11 @@
+use std::time::Duration;
+
+use anyhow::{Context, anyhow};
 use serde::Deserialize;
 
 use crate::client::{
     event_manager::{EventContext, EventHandlerResult},
-    message::Message,
+    message::PrivateMessage,
 };
 
 #[derive(Deserialize, Debug)]
@@ -18,16 +21,16 @@ struct Countdown {
     value: String,
 }
 
-pub fn raweceek_handler(ctx: &mut EventContext) -> EventHandlerResult {
-    let Message::PrivateMessage { receiver, text, .. } = ctx.message else {
-        return Ok(());
-    };
-
-    if text != "!ceeks" || !receiver.starts_with('#') {
+pub fn raweceek_handler(ctx: &mut EventContext<PrivateMessage>) -> EventHandlerResult {
+    let e = ctx.event;
+    if e.text() != "!ceeks" || !e.receiver().starts_with('#') {
         return Ok(());
     }
 
     let response = ureq::get(&ctx.config.handler.raweceek.url)
+        .config()
+        .timeout_global(Some(Duration::from_secs(1)))
+        .build()
         .call()?
         .body_mut()
         .read_json::<Response>()?;
@@ -36,11 +39,13 @@ pub fn raweceek_handler(ctx: &mut EventContext) -> EventHandlerResult {
         .countdowns
         .iter()
         .find(|countdown| countdown.kind == "CEEKS")
-        .ok_or("CEEKS countdown is missing in the response")?;
+        .with_context(|| anyhow!("CEEKS countdown is missing: {response:?}"))?;
 
     ctx.send(format_args!(
         "PRIVMSG {} :\x02{}\x02 begins in {} 🎉",
-        receiver, response.summary, countdown.value
+        e.receiver(),
+        response.summary,
+        countdown.value
     ));
 
     Ok(())

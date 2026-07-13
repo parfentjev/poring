@@ -1,23 +1,25 @@
-use std::{collections::HashMap, error::Error, fmt};
-
-use log::warn;
-
-use crate::{
-    client::{irc::Sender, message::Message},
-    config::Config,
+use std::{
+    any::{self, Any, TypeId},
+    collections::HashMap,
+    fmt,
 };
 
-pub struct EventContext<'a> {
+use anyhow::Result;
+use log::{error, warn};
+
+use crate::{client::irc::Sender, config::Config};
+
+pub struct EventContext<'a, E> {
     pub config: &'a Config,
-    pub message: &'a Message,
+    pub event: &'a E,
     sender: &'a mut Sender,
 }
 
-impl<'a> EventContext<'a> {
-    pub fn new(config: &'a Config, message: &'a Message, sender: &'a mut Sender) -> Self {
+impl<'a, E> EventContext<'a, E> {
+    pub fn new(config: &'a Config, event: &'a E, sender: &'a mut Sender) -> Self {
         Self {
             config,
-            message,
+            event,
             sender,
         }
     }
@@ -29,27 +31,50 @@ impl<'a> EventContext<'a> {
     }
 }
 
-pub type EventHandlerResult = Result<(), Box<dyn Error>>;
+pub type EventHandlerResult = Result<()>;
 
-type EventHandler = dyn Fn(&mut EventContext) -> EventHandlerResult;
+type HandlerVec<E> = Vec<Box<dyn Fn(&mut EventContext<E>) -> EventHandlerResult>>;
 
 #[derive(Default)]
 pub struct EventManager {
-    handlers: HashMap<String, Vec<Box<EventHandler>>>,
+    event_handlers_map: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl EventManager {
-    pub fn register(&mut self, event: impl Into<String>, handler: Box<EventHandler>) {
-        self.handlers.entry(event.into()).or_default().push(handler);
+    pub fn new() -> EventManager {
+        EventManager {
+            event_handlers_map: HashMap::new(),
+        }
     }
 
-    pub fn dispatch(&self, event: &str, ctx: &mut EventContext) {
-        let Some(handlers) = self.handlers.get(event) else {
+    pub fn register<E, H>(&mut self, handler: H)
+    where
+        E: 'static,
+        H: Fn(&mut EventContext<E>) -> EventHandlerResult + 'static,
+    {
+        let type_id = TypeId::of::<HandlerVec<E>>();
+
+        self.event_handlers_map
+            .entry(type_id)
+            .or_insert_with(|| Box::new(HandlerVec::<E>::new()))
+            .downcast_mut::<HandlerVec<E>>()
+            .unwrap()
+            .push(Box::new(handler));
+    }
+
+    pub fn dispatch<E: 'static>(&self, ctx: &mut EventContext<E>) {
+        let type_id = TypeId::of::<HandlerVec<E>>();
+        let Some(handlers) = self.event_handlers_map.get(&type_id) else {
+            return;
+        };
+
+        let Some(handlers) = handlers.downcast_ref::<HandlerVec<E>>() else {
+            error!("failed to downcast for: {}", any::type_name::<E>());
             return;
         };
 
         handlers
             .iter()
-            .for_each(|h| _ = h(ctx).inspect_err(|e| warn!("handler returned error: {e}")));
+            .for_each(|handler| _ = handler(ctx).inspect_err(|e| warn!("handler error: {e}")));
     }
 }

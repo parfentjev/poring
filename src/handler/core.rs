@@ -1,11 +1,13 @@
+use anyhow::{Context, anyhow};
+
 use crate::client::{
     event_manager::{EventContext, EventHandlerResult},
-    message::Message,
+    message::{Ping, PrivateMessage, Welcome},
 };
 
 const VERSION: &str = env!("GIT_COMMIT_HASH");
 
-pub fn welcome_handler(ctx: &mut EventContext) -> EventHandlerResult {
+pub fn welcome_handler(ctx: &mut EventContext<Welcome>) -> EventHandlerResult {
     ctx.config
         .server
         .autojoin
@@ -15,22 +17,18 @@ pub fn welcome_handler(ctx: &mut EventContext) -> EventHandlerResult {
     Ok(())
 }
 
-pub fn ping_handler(ctx: &mut EventContext) -> EventHandlerResult {
-    let Message::Ping { token } = ctx.message else {
-        return Ok(());
-    };
-
-    ctx.send(format_args!("PONG :{}", token));
+pub fn ping_handler(ctx: &mut EventContext<Ping>) -> EventHandlerResult {
+    ctx.send(format_args!("PONG :{}", ctx.event.token()));
     Ok(())
 }
 
-pub fn version_handler(ctx: &mut EventContext) -> EventHandlerResult {
-    let Message::PrivateMessage { sender, text, .. } = ctx.message else {
-        return Ok(());
-    };
-
-    if text == "\x01VERSION\x01" {
-        let (sender, _) = sender.split_once('!').ok_or("corrupted prefix")?;
+pub fn version_handler(ctx: &mut EventContext<PrivateMessage>) -> EventHandlerResult {
+    let e = ctx.event;
+    if e.text() == "\x01VERSION\x01" {
+        let (sender, _) = e
+            .sender()
+            .split_once('!')
+            .with_context(|| anyhow!("corrupted prefix: {}", e.sender()))?;
 
         ctx.send(format_args!(
             "NOTICE {} :\x01VERSION poring irc bot: {VERSION}\x01",

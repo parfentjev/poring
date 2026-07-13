@@ -1,4 +1,4 @@
-FROM rust:1.96.0-slim-trixie AS builder
+FROM rust:1.97.0-slim-trixie AS builder
 WORKDIR /usr/src/poring
 COPY . .
 ARG GIT_COMMIT_HASH
