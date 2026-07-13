@@ -30,10 +30,7 @@ pub fn version_handler(ctx: &mut EventContext<PrivateMessage>) -> EventHandlerRe
             .split_once('!')
             .with_context(|| anyhow!("corrupted prefix: {}", e.sender()))?;
 
-        ctx.send(format_args!(
-            "NOTICE {} :\x01VERSION poring irc bot: {VERSION}\x01",
-            sender
-        ));
+        ctx.send(format_args!("NOTICE {} :\x01VERSION {VERSION}\x01", sender));
     }
 
     Ok(())

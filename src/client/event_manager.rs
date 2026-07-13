@@ -1,3 +1,5 @@
+// todo: EventManager isn't strictly related to irc client,
+// Could it be de-coupled? EventContext can be a generic type.
 use std::{
     any::{self, Any, TypeId},
     collections::HashMap,
