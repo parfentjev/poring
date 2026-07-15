@@ -11,13 +11,28 @@ use log::{debug, info, warn};
 use crate::{
     client::{
         authenticator::Authenticator,
-        event_manager::{EventContext, EventManager},
         message::{Authenticate, Cap, Ping, PrivateMessage, RawMessage, SaslSuccess, Welcome},
     },
     config::Config,
+    event::{EventContext, EventManager},
 };
 
 const POLL_INTERVAL: Duration = Duration::from_secs(60);
+
+pub struct ClientState<'a> {
+    config: &'a Config,
+    sender: &'a mut Sender,
+}
+
+impl<'a> ClientState<'a> {
+    pub fn config(&self) -> &Config {
+        self.config
+    }
+
+    pub fn sender(&mut self) -> &mut Sender {
+        self.sender
+    }
+}
 
 pub struct Client {
     config: Config,
@@ -113,7 +128,15 @@ impl Client {
     {
         match E::try_from(raw_message) {
             Ok(message) => {
-                let mut ctx = EventContext::new(&self.config, &message, sender);
+                //let mut ctx = EventContext::new(&self.config, &message, sender);
+                let mut ctx = EventContext {
+                    state: &mut ClientState {
+                        config: &self.config,
+                        sender,
+                    },
+                    event: &message,
+                };
+
                 self.event_manager.dispatch(&mut ctx);
             }
             Err(e) => warn!("failed to convert raw_message: {e}"),
