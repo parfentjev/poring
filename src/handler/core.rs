@@ -8,11 +8,7 @@ use crate::client::{
 const VERSION: &str = env!("GIT_COMMIT_HASH");
 
 pub fn welcome_handler(ctx: &mut EventContext<Welcome>) -> EventHandlerResult {
-    ctx.config
-        .server
-        .autojoin
-        .iter()
-        .for_each(|channel| ctx.send(format_args!("JOIN {}", channel)));
+    ctx.send(format_args!("JOIN {}", ctx.config.handler.core.autojoin));
 
     Ok(())
 }

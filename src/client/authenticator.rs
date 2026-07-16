@@ -7,7 +7,7 @@ use crate::{
         irc::Sender,
         message::{Authenticate, Cap, SaslSuccess},
     },
-    config::{AuthenticatorConfig, UserConfig},
+    config::{Identity, Sasl},
 };
 
 #[derive(Default)]
@@ -16,11 +16,20 @@ pub struct Authenticator {
 }
 
 impl Authenticator {
-    pub fn request_sasl(
+    pub fn register(
         &mut self,
         event_manager: &mut EventManager,
         sender: &mut Sender,
+        identity: &Identity,
     ) -> Result<()> {
+        if !identity.sasl.enabled {
+            sender.send(format_args!("NICK {}", identity.nickname))?;
+            return sender.send(format_args!(
+                "USER {} 0 * :{}",
+                identity.username, identity.realname
+            ));
+        }
+
         self.register_handlers(event_manager);
         sender.send("CAP REQ :sasl")
     }
@@ -48,7 +57,9 @@ fn handle_cap(ctx: &mut EventContext<Cap>) -> EventHandlerResult {
 
 fn handle_authenticate(ctx: &mut EventContext<Authenticate>) -> EventHandlerResult {
     if ctx.event.data() == "+" {
-        let AuthenticatorConfig { username, password } = &ctx.config.user.sasl;
+        let Sasl {
+            username, password, ..
+        } = &ctx.config.identity.sasl;
         let credentials = STANDARD.encode(format!("\0{username}\0{password}"));
 
         ctx.send(format_args!("AUTHENTICATE {}", credentials));
@@ -58,12 +69,12 @@ fn handle_authenticate(ctx: &mut EventContext<Authenticate>) -> EventHandlerResu
 }
 
 fn handle_success(ctx: &mut EventContext<SaslSuccess>) -> EventHandlerResult {
-    let UserConfig {
+    let Identity {
         nickname,
         username,
         realname,
         ..
-    } = &ctx.config.user;
+    } = &ctx.config.identity;
 
     ctx.send("CAP END");
     ctx.send(format_args!("NICK {nickname}"));

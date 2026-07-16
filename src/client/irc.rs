@@ -18,6 +18,7 @@ use crate::{
 };
 
 const POLL_INTERVAL: Duration = Duration::from_secs(60);
+const CONNECTION_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 pub struct Client {
     config: Config,
@@ -50,8 +51,11 @@ impl Client {
             let mut sender = Sender::new(stream.try_clone()?);
             let reader = BufReader::new(stream);
 
-            self.authenticator
-                .request_sasl(&mut self.event_manager, &mut sender)?;
+            self.authenticator.register(
+                &mut self.event_manager,
+                &mut sender,
+                &self.config.identity,
+            )?;
             self.read_messages(reader, sender);
 
             info!("disconnected from the server");
@@ -64,7 +68,7 @@ impl Client {
                 Ok(result) => result,
                 Err(error) if is_transient_err(&error) => {
                     if self.connection_timed_out() {
-                        info!("connection time out after {:?}", self.config.server.timeout);
+                        info!("connection time out after {CONNECTION_TIMEOUT:?}");
                         break;
                     }
                     continue;
@@ -123,7 +127,7 @@ impl Client {
     fn connection_timed_out(&self) -> bool {
         self.last_ping
             .or(self.connected_at)
-            .is_some_and(|last_active| last_active.elapsed() > self.config.server.timeout)
+            .is_some_and(|last_active| last_active.elapsed() > CONNECTION_TIMEOUT)
     }
 }
 

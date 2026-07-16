@@ -14,7 +14,11 @@ fn main() {
     let mut event_manager = EventManager::default();
     handler_manager::register_handlers(&mut event_manager);
 
-    let config = Config::default();
+    let config = Config::from_env().unwrap_or_else(|error| {
+        error!("invalid configuration: {error}");
+        process::exit(1);
+    });
+
     let mut client = Client::new(config, event_manager);
     if let Err(error) = client.start() {
         error!("irc client stopped: {error}");
