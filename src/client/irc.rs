@@ -2,11 +2,14 @@ use std::{
     fmt,
     io::{self, BufRead, BufReader, Write},
     net::TcpStream,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
 use anyhow::Result;
 use log::{debug, info, warn};
+use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
+use rustls_platform_verifier::BuilderVerifierExt;
 
 use crate::{
     client::{
@@ -17,8 +20,8 @@ use crate::{
     config::Config,
 };
 
-const POLL_INTERVAL: Duration = Duration::from_secs(60);
-const CONNECTION_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+const POLL_INTERVAL: Duration = Duration::from_mins(1);
+const CONNECTION_TIMEOUT: Duration = Duration::from_mins(10);
 
 pub struct Client {
     config: Config,
@@ -44,12 +47,28 @@ impl Client {
             self.connected_at = Some(Instant::now());
             self.last_ping = None;
 
-            let stream = TcpStream::connect(&self.config.server.address)?;
-            stream.set_read_timeout(Some(POLL_INTERVAL))?;
+            let tcp_stream = TcpStream::connect(&self.config.server.address)?;
+            tcp_stream.set_read_timeout(Some(POLL_INTERVAL))?;
+
+            let tls_config = rustls::ClientConfig::builder()
+                .with_platform_verifier()?
+                .with_no_client_auth();
+            let tls_server = ServerName::try_from(
+                self.config
+                    .server
+                    .address
+                    .split_once(':')
+                    .unwrap()
+                    .0
+                    .to_owned(),
+            )
+            .unwrap();
+            let tls_client = rustls::ClientConnection::new(Arc::new(tls_config), tls_server)?;
+            let tls_connection = StreamOwned::new(tls_client, tcp_stream);
             info!("connected to the server");
 
-            let mut sender = Sender::new(stream.try_clone()?);
-            let reader = BufReader::new(stream);
+            let reader = BufReader::new(tls_connection);
+            let mut sender = Sender::new(reader.get_mut());
 
             self.authenticator.register(
                 &mut self.event_manager,

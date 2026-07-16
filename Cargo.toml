@@ -9,6 +9,8 @@ base64 = "0.22.1"
 env_logger = { version = "0.11.10", default-features = false }
 figment = { version = "0.10.19", features = ["env"] }
 log = "0.4.32"
+rustls = "0.23.42"
+rustls-platform-verifier = "0.7.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 ureq = { version = "3.3.0", features = ["json"] }
