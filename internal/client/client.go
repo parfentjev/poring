@@ -47,8 +47,7 @@ func (c *Client) run() error {
 	c.conn = conn
 	defer func() {
 		c.conn = nil
-
-		err = conn.Close()
+		_ = conn.Close()
 	}()
 
 	event.Publish(c.eventManager, eventContext(c, ClientConnectedEvent{}))
