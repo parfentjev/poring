@@ -6,6 +6,8 @@ import (
 
 	"codeberg.org/parfentjev/poring/internal/client"
 	"codeberg.org/parfentjev/poring/internal/config"
+	"codeberg.org/parfentjev/poring/internal/event"
+	"codeberg.org/parfentjev/poring/internal/handler"
 )
 
 func main() {
@@ -21,7 +23,10 @@ func run() error {
 		return err
 	}
 
-	client := client.New(config)
+	eventManager := event.NewManager()
+	handler.RegisterHandlers(eventManager)
+
+	client := client.New(config, eventManager)
 	if err := client.Run(); err != nil {
 		fmt.Println("client error:", err)
 	}
