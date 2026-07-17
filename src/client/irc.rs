@@ -6,14 +6,13 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use log::{debug, info, warn};
-use rustls::{ClientConfig, ClientConnection, StreamOwned, pki_types::ServerName};
+use rustls::{ClientConnection, StreamOwned, pki_types::ServerName};
 use rustls_platform_verifier::BuilderVerifierExt;
 
 use crate::{
     client::{
-        authenticator::Authenticator,
         event_manager::{EventContext, EventManager},
         message::{Authenticate, Cap, Ping, PrivateMessage, RawMessage, SaslSuccess, Welcome},
     },
@@ -26,17 +25,23 @@ const CONNECTION_TIMEOUT: Duration = Duration::from_mins(10);
 pub struct Client {
     config: Config,
     event_manager: EventManager,
-    authenticator: Authenticator,
     connected_at: Option<Instant>,
     last_ping: Option<Instant>,
 }
+
+pub struct Connection {
+    pub reader: BufReader<StreamOwned<ClientConnection, TcpStream>>,
+}
+
+pub struct ClientConnected {}
+
+pub struct ClientDisconnected {}
 
 impl Client {
     pub fn new(config: Config, event_manager: EventManager) -> Self {
         Self {
             config,
             event_manager,
-            authenticator: Authenticator::default(),
             connected_at: None,
             last_ping: None,
         }
@@ -44,47 +49,47 @@ impl Client {
 
     pub fn start(&mut self) -> Result<()> {
         loop {
+            let mut conn = self.connect()?;
             self.connected_at = Some(Instant::now());
             self.last_ping = None;
 
-            let tcp_stream = TcpStream::connect(&self.config.server.address)?;
-            tcp_stream.set_read_timeout(Some(POLL_INTERVAL))?;
-
-            let tls_config = rustls::ClientConfig::builder()
-                .with_platform_verifier()?
-                .with_no_client_auth();
-            let tls_server = ServerName::try_from(
-                self.config
-                    .server
-                    .address
-                    .split_once(':')
-                    .unwrap()
-                    .0
-                    .to_owned(),
-            )
-            .unwrap();
-            let tls_client = rustls::ClientConnection::new(Arc::new(tls_config), tls_server)?;
-            let tls_connection = StreamOwned::new(tls_client, tcp_stream);
-            info!("connected to the server");
-
-            let reader = BufReader::new(tls_connection);
-            let mut sender = Sender::new(reader.get_mut());
-
-            self.authenticator.register(
-                &mut self.event_manager,
-                &mut sender,
-                &self.config.identity,
-            )?;
-            self.read_messages(reader, sender);
-
-            info!("disconnected from the server");
+            self.dispatch_message(&mut conn, ClientConnected {});
+            self.read_messages(&mut conn);
+            self.dispatch_message(&mut conn, ClientDisconnected {});
         }
     }
 
-    fn read_messages(&mut self, reader: BufReader<TcpStream>, mut sender: Sender) {
-        for line in reader.lines() {
-            let raw_message = match line {
-                Ok(result) => result,
+    fn connect(&self) -> Result<Connection> {
+        let tcp_stream = TcpStream::connect(&self.config.server.address)?;
+        tcp_stream.set_read_timeout(Some(POLL_INTERVAL))?;
+
+        let tls_config = rustls::ClientConfig::builder()
+            .with_platform_verifier()?
+            .with_no_client_auth();
+
+        let tls_server = ServerName::try_from(
+            self.config
+                .server
+                .address
+                .split_once(':')
+                .ok_or_else(|| anyhow!("invalid server address: {}", self.config.server.address))?
+                .0
+                .to_owned(),
+        )?;
+
+        let tls_conn = rustls::ClientConnection::new(Arc::new(tls_config), tls_server)?;
+        let tls_stream = StreamOwned::new(tls_conn, tcp_stream);
+
+        Ok(Connection {
+            reader: BufReader::new(tls_stream),
+        })
+    }
+
+    fn read_messages(&mut self, conn: &mut Connection) {
+        loop {
+            let mut line = String::new();
+            match conn.reader.read_line(&mut line) {
+                Ok(0) => continue,
                 Err(error) if is_transient_err(&error) => {
                     if self.connection_timed_out() {
                         info!("connection time out after {CONNECTION_TIMEOUT:?}");
@@ -96,16 +101,20 @@ impl Client {
                     info!("unhandled tcp error: {error}; {}", error.kind());
                     break;
                 }
-            };
-
-            debug!("=> {raw_message}");
-            self.notify_handlers(raw_message, &mut sender);
+                _ => {
+                    if line.ends_with("\r\n") {
+                        line.truncate(line.len() - 2);
+                        debug!("=> {line}");
+                        self.notify_handlers(conn, line);
+                    }
+                }
+            }
         }
     }
 
-    fn notify_handlers(&mut self, raw_message: String, sender: &mut Sender) {
-        let raw_message = match raw_message.parse::<RawMessage>() {
-            Ok(raw_message) => raw_message,
+    fn notify_handlers(&mut self, conn: &mut Connection, message: String) {
+        let message = match RawMessage::try_from(message) {
+            Ok(message) => message,
             Err(e) => {
                 warn!("failed to parse raw_message: {e}");
                 return;
@@ -115,32 +124,38 @@ impl Client {
         // todo: I don't think the client itself should be responsible for this mapping.
         // The client's essential job is to manage tcp streams.
         // Perhaps I need to add some separate router to manage this logic.
-        match raw_message.command() {
-            "CAP" => self.dispatch_message::<Cap>(raw_message, sender),
-            "AUTHENTICATE" => self.dispatch_message::<Authenticate>(raw_message, sender),
-            "903" => self.dispatch_message::<SaslSuccess>(raw_message, sender),
-            "001" => self.dispatch_message::<Welcome>(raw_message, sender),
+        match message.command() {
+            "CAP" => self.process_raw_message::<Cap>(conn, message),
+            "AUTHENTICATE" => self.process_raw_message::<Authenticate>(conn, message),
+            "903" => self.process_raw_message::<SaslSuccess>(conn, message),
+            "001" => self.process_raw_message::<Welcome>(conn, message),
             "PING" => {
                 self.last_ping = Some(Instant::now());
-                self.dispatch_message::<Ping>(raw_message, sender);
+                self.process_raw_message::<Ping>(conn, message);
             }
-            "PRIVMSG" => self.dispatch_message::<PrivateMessage>(raw_message, sender),
-            _ => self.dispatch_message::<RawMessage>(raw_message, sender),
+            "PRIVMSG" => self.process_raw_message::<PrivateMessage>(conn, message),
+            _ => self.process_raw_message::<RawMessage>(conn, message),
         }
     }
 
-    fn dispatch_message<E>(&self, raw_message: RawMessage, sender: &mut Sender)
+    fn process_raw_message<E>(&self, conn: &mut Connection, message: RawMessage)
     where
         E: TryFrom<RawMessage> + 'static,
         E::Error: fmt::Display,
     {
-        match E::try_from(raw_message) {
-            Ok(message) => {
-                let mut ctx = EventContext::new(&self.config, &message, sender);
-                self.event_manager.dispatch(&mut ctx);
-            }
+        match E::try_from(message) {
+            Ok(message) => self.dispatch_message(conn, message),
             Err(e) => warn!("failed to convert raw_message: {e}"),
         }
+    }
+
+    fn dispatch_message<T>(&self, conn: &mut Connection, message: T)
+    where
+        T: 'static,
+    {
+        let mut sender = Sender::new(conn.reader.get_mut());
+        let mut ctx = EventContext::new(&self.config, &message, &mut sender);
+        self.event_manager.dispatch(&mut ctx);
     }
 
     fn connection_timed_out(&self) -> bool {
@@ -156,12 +171,12 @@ fn is_transient_err(error: &io::Error) -> bool {
     matches!(error.kind(), io::ErrorKind::WouldBlock)
 }
 
-pub struct Sender {
-    writer: TcpStream,
+pub struct Sender<'a> {
+    writer: &'a mut dyn Write,
 }
 
-impl Sender {
-    fn new(writer: TcpStream) -> Self {
+impl<'a> Sender<'a> {
+    pub fn new(writer: &'a mut dyn Write) -> Self {
         Self { writer }
     }
 

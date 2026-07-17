@@ -11,14 +11,14 @@ use log::{error, warn};
 
 use crate::{client::irc::Sender, config::Config};
 
-pub struct EventContext<'a, E> {
-    pub config: &'a Config,
-    pub event: &'a E,
-    sender: &'a mut Sender,
+pub struct EventContext<'ctx, 'writer, E> {
+    pub config: &'ctx Config,
+    pub event: &'ctx E,
+    sender: &'ctx mut Sender<'writer>,
 }
 
-impl<'a, E> EventContext<'a, E> {
-    pub fn new(config: &'a Config, event: &'a E, sender: &'a mut Sender) -> Self {
+impl<'ctx, 'writer, E> EventContext<'ctx, 'writer, E> {
+    pub fn new(config: &'ctx Config, event: &'ctx E, sender: &'ctx mut Sender<'writer>) -> Self {
         Self {
             config,
             event,

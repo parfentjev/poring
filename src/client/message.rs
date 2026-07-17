@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, str::FromStr};
+use std::collections::VecDeque;
 
 use anyhow::{Context, anyhow};
 
@@ -12,16 +12,16 @@ pub(super) struct RawMessage {
 }
 
 impl RawMessage {
-    pub(super) fn command(&self) -> &str {
+    pub fn command(&self) -> &str {
         &self.command
     }
 }
 
-impl FromStr for RawMessage {
-    type Err = anyhow::Error;
+impl TryFrom<String> for RawMessage {
+    type Error = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut tokens = s.split_whitespace().collect::<VecDeque<_>>();
+    fn try_from(source: String) -> Result<Self, Self::Error> {
+        let mut tokens = source.split_whitespace().collect::<VecDeque<_>>();
 
         let prefix = match tokens.front() {
             Some(token) if token.starts_with(':') => {
@@ -35,7 +35,8 @@ impl FromStr for RawMessage {
         // An empty message? something is wrong - return.
         let command = tokens
             .pop_front()
-            .with_context(|| anyhow!("command is missing in: {s}"))?;
+            .with_context(|| anyhow!("command is missing in: {source}"))?
+            .to_string();
 
         // Otherwise, some params and possibly text are expected.
         let (params, text) =
@@ -70,9 +71,9 @@ impl FromStr for RawMessage {
             };
 
         Ok(RawMessage {
-            source: s.to_owned(),
+            source,
             prefix,
-            command: command.to_string(),
+            command,
             params,
             text,
         })
