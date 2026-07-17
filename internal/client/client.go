@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"time"
 
@@ -13,13 +14,14 @@ import (
 )
 
 type Client struct {
+	logger       *slog.Logger
 	config       config.Config
-	conn         net.Conn
 	eventManager *event.EventManager
+	conn         net.Conn
 }
 
-func New(config config.Config, eventManager *event.EventManager) *Client {
-	return &Client{config: config, eventManager: eventManager}
+func New(logger *slog.Logger, config config.Config, eventManager *event.EventManager) *Client {
+	return &Client{logger: logger.With("component", "client"), config: config, eventManager: eventManager}
 }
 
 func (c *Client) Run() error {
@@ -27,10 +29,10 @@ func (c *Client) Run() error {
 
 	for {
 		err := c.run()
-		event.Publish(c.eventManager, event.EventContext[ClientContext, ClientDisconnected]{State: ClientContext{Config: c.config, Send: func(s string) { c.send(s) }}})
+		event.Publish(c.eventManager, eventContext(c, ClientDisconnected{}))
 
 		if err != nil {
-			fmt.Println("irc session error:", err)
+			c.logger.Warn("connection terminated", "error", err)
 		}
 
 		time.Sleep(reconnectDelay)
@@ -49,12 +51,12 @@ func (c *Client) run() error {
 		conn.Close()
 	}()
 
-	event.Publish(c.eventManager, event.EventContext[ClientContext, ClientConnected]{State: ClientContext{Config: c.config, Send: func(s string) { c.send(s) }}})
+	event.Publish(c.eventManager, eventContext(c, ClientConnected{}))
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		message := scanner.Text()
-		fmt.Println("=>", message)
+		c.logger.Debug("inbound message", "text", message)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -65,10 +67,21 @@ func (c *Client) run() error {
 }
 
 func (c *Client) send(message string) {
-	fmt.Println("<=", message)
+	c.logger.Debug("outbound message", "text", message)
 
 	_, err := io.WriteString(c.conn, message+"\r\n")
 	if err != nil {
-		fmt.Println("send message error:", err)
+		c.logger.Warn("failed to send message", "error", err)
+	}
+}
+
+func eventContext[T any](c *Client, message T) event.EventContext[ClientContext, T] {
+	return event.EventContext[ClientContext, T]{
+		State: ClientContext{
+			Logger: c.logger.With("component", "handler"),
+			Config: c.config,
+			Send:   func(s string) { c.send(s) },
+		},
+		Event: message,
 	}
 }

@@ -1,10 +1,15 @@
 package client
 
-import "codeberg.org/parfentjev/poring/internal/config"
+import (
+	"log/slog"
+
+	"codeberg.org/parfentjev/poring/internal/config"
+)
 
 type MessageSender func(string)
 
 type ClientContext struct {
+	Logger *slog.Logger
 	Config config.Config
 	Send   MessageSender
 }

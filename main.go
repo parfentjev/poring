@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"os"
 
 	"codeberg.org/parfentjev/poring/internal/client"
@@ -11,13 +11,14 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Println("execution stopped with error:", err)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	if err := run(logger); err != nil {
+		logger.Error("client stopped", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
+func run(logger *slog.Logger) error {
 	config, err := config.New()
 	if err != nil {
 		return err
@@ -26,10 +27,5 @@ func run() error {
 	eventManager := event.NewManager()
 	handler.RegisterHandlers(eventManager)
 
-	client := client.New(config, eventManager)
-	if err := client.Run(); err != nil {
-		fmt.Println("client error:", err)
-	}
-
-	return nil
+	return client.New(logger, config, eventManager).Run()
 }
