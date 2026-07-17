@@ -13,7 +13,7 @@ type RawMessage struct {
 
 func parseRawMessage(s string) RawMessage {
 	var (
-		message []string = strings.Split(strings.TrimSpace(s), " ")
+		message = strings.Split(strings.TrimSpace(s), " ")
 		prefix  string
 		command string
 		params  []string

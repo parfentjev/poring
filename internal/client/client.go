@@ -47,7 +47,8 @@ func (c *Client) run() error {
 	c.conn = conn
 	defer func() {
 		c.conn = nil
-		conn.Close()
+
+		err = conn.Close()
 	}()
 
 	event.Publish(c.eventManager, eventContext(c, ClientConnectedEvent{}))
@@ -67,7 +68,7 @@ func (c *Client) run() error {
 		return fmt.Errorf("tcp reader error: %w", err)
 	}
 
-	return nil
+	return err
 }
 
 func (c *Client) send(message string) {
