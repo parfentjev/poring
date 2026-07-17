@@ -6,18 +6,32 @@ import (
 )
 
 func RegisterHandlers(eventManager *event.EventManager) {
-	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ClientConnected]) {
+	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ClientConnectedEvent]) error {
 		ctx.State.Logger.Info("connected to the server")
+
+		return nil
 	})
 
-	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ClientDisconnected]) {
+	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ClientDisconnectedEvent]) error {
 		ctx.State.Logger.Info("disconnected from the server")
+
+		return nil
 	})
 
-	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ClientConnected]) {
+	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ClientConnectedEvent]) error {
 		cfg := ctx.State.Config
-		ctx.State.Send("NICK " + cfg.Identity.Nickname)
-		ctx.State.Send("USER " + cfg.Identity.Username + " 0 * :" + cfg.Identity.Realname)
-		ctx.State.Send("JOIN " + cfg.Handler.Core.Autojoin)
+		send := ctx.State.Send
+
+		send("NICK " + cfg.Identity.Nickname)
+		send("USER " + cfg.Identity.Username + " 0 * :" + cfg.Identity.Realname)
+		send("JOIN " + cfg.Handler.Core.Autojoin)
+
+		return nil
+	})
+
+	event.Subscribe(eventManager, func(ctx event.EventContext[client.ClientContext, client.ServerPingEvent]) error {
+		ctx.State.Send("PONG :" + ctx.Event.Token)
+
+		return nil
 	})
 }

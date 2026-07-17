@@ -29,13 +29,12 @@ func (c *Client) Run() error {
 
 	for {
 		err := c.run()
-		event.Publish(c.eventManager, eventContext(c, ClientDisconnected{}))
+		event.Publish(c.eventManager, eventContext(c, ClientDisconnectedEvent{}))
 
 		if err != nil {
 			c.logger.Warn("connection terminated", "error", err)
+			time.Sleep(reconnectDelay)
 		}
-
-		time.Sleep(reconnectDelay)
 	}
 }
 
@@ -51,12 +50,17 @@ func (c *Client) run() error {
 		conn.Close()
 	}()
 
-	event.Publish(c.eventManager, eventContext(c, ClientConnected{}))
+	event.Publish(c.eventManager, eventContext(c, ClientConnectedEvent{}))
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		message := scanner.Text()
 		c.logger.Debug("inbound message", "text", message)
+
+		raw := parseRawMessage(message)
+		if raw.Command == "PING" {
+			event.Publish(c.eventManager, eventContext(c, ServerPingEvent{Token: raw.Text}))
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

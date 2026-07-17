@@ -1,26 +1,33 @@
 package event
 
-import "reflect"
+import (
+	"log/slog"
+	"reflect"
+)
 
 type EventContext[S, E any] struct {
 	State S
 	Event E
 }
 
-type EventHandlerMap map[reflect.Type][]func(any)
+type EventHandlerMap map[reflect.Type][]func(any) error
 
 type EventManager struct {
+	Logger   *slog.Logger
 	handlers EventHandlerMap
 }
 
-func NewManager() *EventManager {
-	return &EventManager{handlers: make(EventHandlerMap)}
+func NewManager(logger *slog.Logger) *EventManager {
+	return &EventManager{
+		Logger:   logger.With("component", "event-manager"),
+		handlers: make(EventHandlerMap),
+	}
 }
 
-func Subscribe[S, T any](manager *EventManager, handler func(EventContext[S, T])) {
+func Subscribe[S, T any](manager *EventManager, handler func(EventContext[S, T]) error) {
 	eventType := reflect.TypeFor[T]()
-	manager.handlers[eventType] = append(manager.handlers[eventType], func(ctx any) {
-		handler(ctx.(EventContext[S, T]))
+	manager.handlers[eventType] = append(manager.handlers[eventType], func(ctx any) error {
+		return handler(ctx.(EventContext[S, T]))
 	})
 }
 
@@ -29,6 +36,11 @@ func Publish[S, T any](manager *EventManager, ctx EventContext[S, T]) {
 	handlers := manager.handlers[eventType]
 
 	for _, handler := range handlers {
-		handler(ctx)
+		var err error
+		go func() { err = handler(ctx) }()
+
+		if err != nil {
+			manager.Logger.Warn("handler exited with an error", "error", err)
+		}
 	}
 }

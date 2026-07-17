@@ -14,6 +14,10 @@ type ClientContext struct {
 	Send   MessageSender
 }
 
-type ClientConnected struct{}
+type ClientConnectedEvent struct{}
 
-type ClientDisconnected struct{}
+type ClientDisconnectedEvent struct{}
+
+type ServerPingEvent struct {
+	Token string
+}

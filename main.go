@@ -24,7 +24,7 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 
-	eventManager := event.NewManager()
+	eventManager := event.NewManager(logger)
 	handler.RegisterHandlers(eventManager)
 
 	return client.New(logger, config, eventManager).Run()
