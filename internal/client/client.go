@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
+	"strings"
 	"time"
 
 	"codeberg.org/parfentjev/poring/internal/config"
@@ -29,15 +31,12 @@ func (c *Client) Run() error {
 	for {
 		err := c.run()
 		publish(c, Disconnected{})
-		if err == nil {
-			break
+		if err != nil {
+			c.logger.Warn("connection terminated", "error", err)
 		}
 
-		c.logger.Warn("connection terminated", "error", err)
 		time.Sleep(reconnectDelay)
 	}
-
-	return nil
 }
 
 func (c *Client) run() error {
@@ -70,10 +69,15 @@ func (c *Client) run() error {
 	return err
 }
 
-func (c *Client) send(message string, a ...any) {
-	c.logger.Debug("outbound message", "text", message)
+func (c *Client) send(s string, a ...any) {
+	message := fmt.Sprintf(s, a...)
+	if strings.ContainsAny(message, "\r\n\x00") {
+		c.logger.Warn("invalid irc message")
+		return
+	}
 
-	// todo: it should probably log errors
-	_, _ = fmt.Fprintf(c.conn, message, a...)
-	_, _ = fmt.Fprintf(c.conn, "\n")
+	c.logger.Debug("outbound message", "text", message)
+	// todo: I should probably log errors
+	_, _ = io.WriteString(c.conn, message)
+	_, _ = io.WriteString(c.conn, "\r\n")
 }

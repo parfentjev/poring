@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"codeberg.org/parfentjev/poring/internal/client"
 	"codeberg.org/parfentjev/poring/internal/event"
@@ -28,12 +29,17 @@ func registerRaweceekHandler(eventManger *event.EventManager) {
 			return nil
 		}
 
-		resp, err := http.Get(ctx.State.Config.Handler.Raweceek.URL)
+		client := &http.Client{Timeout: 1 * time.Second}
+		resp, err := client.Get(ctx.State.Config.Handler.Raweceek.URL)
 		if err != nil {
 			return fmt.Errorf("failed to call raweceek.eu: %w", err)
 		}
 
 		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("raweceek.eu returned: %d", resp.StatusCode)
+		}
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -41,7 +47,7 @@ func registerRaweceekHandler(eventManger *event.EventManager) {
 		}
 
 		var nextSession raweceekNextSession
-		if json.Unmarshal(body, &nextSession) != nil {
+		if err := json.Unmarshal(body, &nextSession); err != nil {
 			return fmt.Errorf("failed to unmarshal raweceek.eu response: %w", err)
 		}
 

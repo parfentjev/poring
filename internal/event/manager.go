@@ -36,9 +36,7 @@ func Publish[S, T any](manager *EventManager, ctx EventContext[S, T]) {
 	handlers := manager.handlers[eventType]
 
 	for _, handler := range handlers {
-		var err error
-		go func() { err = handler(ctx) }()
-
+		err := handler(ctx)
 		if err != nil {
 			manager.Logger.Warn("handler exited with an error", "error", err)
 		}
