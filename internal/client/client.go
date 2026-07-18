@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 	"time"
@@ -29,13 +28,16 @@ func (c *Client) Run() error {
 
 	for {
 		err := c.run()
-		event.Publish(c.eventManager, eventContext(c, ClientDisconnectedEvent{}))
-
-		if err != nil {
-			c.logger.Warn("connection terminated", "error", err)
-			time.Sleep(reconnectDelay)
+		publish(c, Disconnected{})
+		if err == nil {
+			break
 		}
+
+		c.logger.Warn("connection terminated", "error", err)
+		time.Sleep(reconnectDelay)
 	}
+
+	return nil
 }
 
 func (c *Client) run() error {
@@ -50,16 +52,14 @@ func (c *Client) run() error {
 		_ = conn.Close()
 	}()
 
-	event.Publish(c.eventManager, eventContext(c, ClientConnectedEvent{}))
+	publish(c, Connected{})
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		message := scanner.Text()
 		c.logger.Debug("inbound message", "text", message)
-
-		raw := parseRawMessage(message)
-		if raw.Command == "PING" {
-			event.Publish(c.eventManager, eventContext(c, ServerPingEvent{Token: raw.Text}))
+		if err := routeIRCEvent(c, message); err != nil {
+			c.logger.Warn("failed to route irc message", "error", err)
 		}
 	}
 
@@ -70,22 +70,10 @@ func (c *Client) run() error {
 	return err
 }
 
-func (c *Client) send(message string) {
+func (c *Client) send(message string, a ...any) {
 	c.logger.Debug("outbound message", "text", message)
 
-	_, err := io.WriteString(c.conn, message+"\r\n")
-	if err != nil {
-		c.logger.Warn("failed to send message", "error", err)
-	}
-}
-
-func eventContext[T any](c *Client, message T) event.EventContext[ClientContext, T] {
-	return event.EventContext[ClientContext, T]{
-		State: ClientContext{
-			Logger: c.logger.With("component", "handler"),
-			Config: c.config,
-			Send:   func(s string) { c.send(s) },
-		},
-		Event: message,
-	}
+	// todo: it should probably log errors
+	_, _ = fmt.Fprintf(c.conn, message, a...)
+	_, _ = fmt.Fprintf(c.conn, "\n")
 }

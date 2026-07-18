@@ -6,18 +6,14 @@ import (
 	"codeberg.org/parfentjev/poring/internal/config"
 )
 
-type MessageSender func(string)
+type MessageSender func(string, ...any)
 
-type ClientContext struct {
+type EventContext struct {
 	Logger *slog.Logger
 	Config config.Config
 	Send   MessageSender
 }
 
-type ClientConnectedEvent struct{}
+type Connected struct{}
 
-type ClientDisconnectedEvent struct{}
-
-type ServerPingEvent struct {
-	Token string
-}
+type Disconnected struct{}
