@@ -77,7 +77,13 @@ func (c *Client) send(s string, a ...any) {
 	}
 
 	c.logger.Debug("outbound message", "text", message)
-	// todo: I should probably log errors
-	_, _ = io.WriteString(c.conn, message)
-	_, _ = io.WriteString(c.conn, "\r\n")
+	c.write(message)
+	c.write("\r\n")
+}
+
+func (c *Client) write(s string) {
+	_, err := io.WriteString(c.conn, s)
+	if err != nil {
+		c.logger.Warn("failed to write to tcp strea", "error", err)
+	}
 }
