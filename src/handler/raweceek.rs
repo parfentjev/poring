@@ -4,8 +4,8 @@ use anyhow::{Context, anyhow};
 use serde::Deserialize;
 
 use crate::client::{
-    event_manager::{EventContext, EventHandlerResult},
     event::PrivateMessage,
+    event_manager::{EventContext, EventHandlerResult},
 };
 
 #[derive(Deserialize, Debug)]
