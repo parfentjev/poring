@@ -1,13 +1,12 @@
 package client
 
 import (
-	"bufio"
+	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
-	"net"
-	"strings"
 	"time"
 
 	"codeberg.org/parfentjev/poring/internal/config"
@@ -15,14 +14,19 @@ import (
 )
 
 type Client struct {
+	ctx          context.Context
 	logger       *slog.Logger
 	config       config.Config
 	eventManager *event.EventManager
-	conn         net.Conn
 }
 
-func New(logger *slog.Logger, config config.Config, eventManager *event.EventManager) *Client {
-	return &Client{logger: logger.With("component", "client"), config: config, eventManager: eventManager}
+func New(ctx context.Context, logger *slog.Logger, config config.Config, eventManager *event.EventManager) *Client {
+	return &Client{
+		ctx:          ctx,
+		logger:       logger.With("component", "client"),
+		config:       config,
+		eventManager: eventManager,
+	}
 }
 
 func (c *Client) Run() error {
@@ -30,12 +34,19 @@ func (c *Client) Run() error {
 
 	for {
 		err := c.run()
-		publish(c, Disconnected{})
+		publish(c, nil, Disconnected{})
 		if err != nil {
 			c.logger.Warn("connection terminated", "error", err)
 		}
 
-		time.Sleep(reconnectDelay)
+		timer := time.NewTimer(reconnectDelay)
+		select {
+		case <-c.ctx.Done():
+			timer.Stop()
+			return nil
+		case <-timer.C:
+			continue
+		}
 	}
 }
 
@@ -45,45 +56,35 @@ func (c *Client) run() error {
 		return fmt.Errorf("tcp dial error: %w", err)
 	}
 
-	c.conn = conn
+	session := newSession(c.logger, conn)
 	defer func() {
-		c.conn = nil
-		_ = conn.Close()
+		err := session.Close()
+		if err != nil {
+			c.logger.Warn("failed to close tcp connection", "error", err)
+		}
 	}()
 
-	publish(c, Connected{})
+	stopShutdownHandler := context.AfterFunc(c.ctx, session.Shutdown)
+	defer stopShutdownHandler()
 
-	scanner := bufio.NewScanner(conn)
-	for scanner.Scan() {
-		message := scanner.Text()
+	publish(c, session, Connected{})
+	return c.readMessages(session)
+}
+
+func (c *Client) readMessages(s session) error {
+	for {
+		message, err := s.ReadMessage()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+
+			return fmt.Errorf("read message error: %w", err)
+		}
+
 		c.logger.Debug("inbound message", "text", message)
-		if err := routeIRCEvent(c, message); err != nil {
+		if err := routeIRCEvent(c, s, message); err != nil {
 			c.logger.Warn("failed to route irc message", "error", err)
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("tcp reader error: %w", err)
-	}
-
-	return err
-}
-
-func (c *Client) send(s string, a ...any) {
-	message := fmt.Sprintf(s, a...)
-	if strings.ContainsAny(message, "\r\n\x00") {
-		c.logger.Warn("invalid irc message")
-		return
-	}
-
-	c.logger.Debug("outbound message", "text", message)
-	c.write(message)
-	c.write("\r\n")
-}
-
-func (c *Client) write(s string) {
-	_, err := io.WriteString(c.conn, s)
-	if err != nil {
-		c.logger.Warn("failed to write to tcp strea", "error", err)
 	}
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"codeberg.org/parfentjev/poring/internal/client"
 	"codeberg.org/parfentjev/poring/internal/config"
@@ -27,7 +30,10 @@ func run(logger *slog.Logger) error {
 	eventManager := event.NewManager(logger)
 	handler.RegisterHandlers(eventManager)
 
-	return client.New(logger, config, eventManager).Run()
+	ctx, cancelCtx := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancelCtx()
+
+	return client.New(ctx, logger, config, eventManager).Run()
 }
 
 func logger() *slog.Logger {
