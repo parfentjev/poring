@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::client::{
     event_manager::{EventContext, EventHandlerResult},
-    message::PrivateMessage,
+    event::PrivateMessage,
 };
 
 #[derive(Deserialize, Debug)]

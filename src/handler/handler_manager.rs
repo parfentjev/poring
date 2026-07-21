@@ -1,11 +1,10 @@
 use crate::{
     client::event_manager::EventManager,
-    handler::{core, raweceek},
+    handler::{authenticator, core, raweceek},
 };
 
 pub fn register_handlers(manager: &mut EventManager) {
-    manager.register(core::welcome_handler);
-    manager.register(core::ping_handler);
+    authenticator::register_handlers(manager);
+    core::register_handlers(manager);
     manager.register(raweceek::raweceek_handler);
-    manager.register(core::version_handler);
 }

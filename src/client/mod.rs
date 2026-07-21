@@ -1,4 +1,4 @@
-mod authenticator;
+pub mod event;
 pub mod event_manager;
 pub mod irc;
-pub mod message;
+mod router;

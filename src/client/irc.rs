@@ -2,84 +2,89 @@ use std::{
     fmt,
     io::{self, BufRead, BufReader, Write},
     net::TcpStream,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use log::{debug, info, warn};
+use rustls::{ClientConnection, StreamOwned, pki_types::ServerName};
+use rustls_platform_verifier::BuilderVerifierExt;
 
 use crate::{
     client::{
-        authenticator::Authenticator,
-        message::{Authenticate, Cap, Ping, PrivateMessage, RawMessage, SaslSuccess, Welcome},
+        event::{self, RawMessage},
+        event_manager::{EventContext, EventManager},
+        router::{self, EventDispatcher},
     },
     config::Config,
-    event::{EventContext, EventManager},
 };
 
-const POLL_INTERVAL: Duration = Duration::from_secs(60);
+const POLL_INTERVAL: Duration = Duration::from_mins(1);
+const CONNECTION_TIMEOUT: Duration = Duration::from_mins(10);
 
-pub struct ClientState<'a> {
-    config: &'a Config,
-    sender: &'a mut Sender,
+struct Connection {
+    reader: BufReader<StreamOwned<ClientConnection, TcpStream>>,
 }
 
-impl<'a> ClientState<'a> {
-    pub fn config(&self) -> &Config {
-        self.config
-    }
-
-    pub fn sender(&mut self) -> &mut Sender {
-        self.sender
-    }
+pub struct Client<'session> {
+    config: &'session Config,
+    event_manager: &'session EventManager,
 }
 
-pub struct Client {
-    config: Config,
-    event_manager: EventManager,
-    authenticator: Authenticator,
-    connected_at: Option<Instant>,
-    last_ping: Option<Instant>,
-}
-
-impl Client {
-    pub fn new(config: Config, event_manager: EventManager) -> Self {
+impl<'client> Client<'client> {
+    pub fn new(config: &'client Config, event_manager: &'client EventManager) -> Self {
         Self {
             config,
             event_manager,
-            authenticator: Authenticator::default(),
-            connected_at: None,
+        }
+    }
+
+    pub fn run(self) -> Result<()> {
+        loop {
+            let conn = connect(self.config)?;
+            ClientSession::new(self.config, self.event_manager, conn).run();
+        }
+    }
+}
+
+struct ClientSession<'session> {
+    config: &'session Config,
+    event_manager: &'session EventManager,
+    conn: Connection,
+    connected_at: Instant,
+    last_ping: Option<Instant>,
+}
+
+impl<'session> ClientSession<'session> {
+    fn new(
+        config: &'session Config,
+        event_manager: &'session EventManager,
+        conn: Connection,
+    ) -> Self {
+        Self {
+            config,
+            event_manager,
+            conn,
+            connected_at: Instant::now(),
             last_ping: None,
         }
     }
 
-    pub fn start(&mut self) -> Result<()> {
-        loop {
-            self.connected_at = Some(Instant::now());
-            self.last_ping = None;
-
-            let stream = TcpStream::connect(&self.config.server.address)?;
-            stream.set_read_timeout(Some(POLL_INTERVAL))?;
-            info!("connected to the server");
-
-            let mut sender = Sender::new(stream.try_clone()?);
-            let reader = BufReader::new(stream);
-
-            self.authenticator
-                .request_sasl(&mut self.event_manager, &mut sender)?;
-            self.read_messages(reader, sender);
-
-            info!("disconnected from the server");
-        }
+    fn run(mut self) {
+        router::dispatch_client_event(event::ClientConnected {}, &mut self);
+        self.read_messages();
+        router::dispatch_client_event(event::ClientDisconnected {}, &mut self);
     }
 
-    fn read_messages(&mut self, reader: BufReader<TcpStream>, mut sender: Sender) {
-        for line in reader.lines() {
-            let raw_message = match line {
-                Ok(result) => result,
+    fn read_messages(&mut self) {
+        loop {
+            let mut line = String::new();
+            match self.conn.reader.read_line(&mut line) {
+                Ok(0) => continue,
                 Err(error) if is_transient_err(&error) => {
                     if self.connection_timed_out() {
-                        info!("connection time out after {:?}", self.config.server.timeout);
+                        info!("connection time out after {CONNECTION_TIMEOUT:?}");
                         break;
                     }
                     continue;
@@ -88,80 +93,84 @@ impl Client {
                     info!("unhandled tcp error: {error}; {}", error.kind());
                     break;
                 }
-            };
-
-            debug!("=> {raw_message}");
-            self.notify_handlers(raw_message, &mut sender);
+                _ => {
+                    if line.ends_with("\r\n") {
+                        line.truncate(line.len() - 2);
+                        debug!("=> {line}");
+                        self.notify_handlers(line);
+                    }
+                }
+            }
         }
     }
 
-    fn notify_handlers(&mut self, raw_message: String, sender: &mut Sender) {
-        let raw_message = match raw_message.parse::<RawMessage>() {
-            Ok(raw_message) => raw_message,
+    fn notify_handlers(&mut self, message: String) {
+        let message = match RawMessage::try_from(message) {
+            Ok(message) => message,
             Err(e) => {
                 warn!("failed to parse raw_message: {e}");
                 return;
             }
         };
 
-        // todo: I don't think the client itself should be responsible for this mapping.
-        // The client's essential job is to manage tcp streams.
-        // Perhaps I need to add some separate router to manage this logic.
-        match raw_message.command() {
-            "CAP" => self.dispatch_message::<Cap>(raw_message, sender),
-            "AUTHENTICATE" => self.dispatch_message::<Authenticate>(raw_message, sender),
-            "903" => self.dispatch_message::<SaslSuccess>(raw_message, sender),
-            "001" => self.dispatch_message::<Welcome>(raw_message, sender),
-            "PING" => {
-                self.last_ping = Some(Instant::now());
-                self.dispatch_message::<Ping>(raw_message, sender);
-            }
-            "PRIVMSG" => self.dispatch_message::<PrivateMessage>(raw_message, sender),
-            _ => self.dispatch_message::<RawMessage>(raw_message, sender),
+        if message.command() == "PING" {
+            self.last_ping = Some(Instant::now());
         }
-    }
 
-    fn dispatch_message<E>(&self, raw_message: RawMessage, sender: &mut Sender)
-    where
-        E: TryFrom<RawMessage> + 'static,
-        E::Error: fmt::Display,
-    {
-        match E::try_from(raw_message) {
-            Ok(message) => {
-                //let mut ctx = EventContext::new(&self.config, &message, sender);
-                let mut ctx = EventContext {
-                    state: &mut ClientState {
-                        config: &self.config,
-                        sender,
-                    },
-                    event: &message,
-                };
-
-                self.event_manager.dispatch(&mut ctx);
-            }
-            Err(e) => warn!("failed to convert raw_message: {e}"),
+        if let Err(e) = router::dispatch_server_event(message, self) {
+            warn!("failed to convert raw_message: {e}");
         }
     }
 
     fn connection_timed_out(&self) -> bool {
-        self.last_ping
-            .or(self.connected_at)
-            .is_some_and(|last_active| last_active.elapsed() > self.config.server.timeout)
+        self.last_ping.unwrap_or(self.connected_at).elapsed() > CONNECTION_TIMEOUT
     }
 }
 
-// I'll probably add more error kinds with a match statement,
-// So this short function will grow and start making more sense.
+impl EventDispatcher for ClientSession<'_> {
+    fn dispatch<T: 'static>(&mut self, event: T) {
+        let mut sender = Sender::new(self.conn.reader.get_mut());
+        let mut ctx = EventContext::new(self.config, &event, &mut sender);
+        self.event_manager.dispatch(&mut ctx);
+    }
+}
+
+fn connect(config: &Config) -> Result<Connection> {
+    let tcp_stream = TcpStream::connect(&config.server.address)?;
+    tcp_stream.set_read_timeout(Some(POLL_INTERVAL))?;
+
+    let tls_config = rustls::ClientConfig::builder()
+        .with_platform_verifier()?
+        .with_no_client_auth();
+
+    let tls_server = ServerName::try_from(
+        config
+            .server
+            .address
+            .split_once(':')
+            .ok_or_else(|| anyhow!("invalid server address: {}", config.server.address))?
+            .0
+            .to_owned(),
+    )?;
+
+    let tls_conn = rustls::ClientConnection::new(Arc::new(tls_config), tls_server)?;
+    let tls_stream = StreamOwned::new(tls_conn, tcp_stream);
+
+    Ok(Connection {
+        reader: BufReader::new(tls_stream),
+    })
+}
+
 fn is_transient_err(error: &io::Error) -> bool {
     matches!(error.kind(), io::ErrorKind::WouldBlock)
 }
 
-pub struct Sender {
-    writer: TcpStream,
+pub struct Sender<'a> {
+    writer: &'a mut dyn Write,
 }
 
-impl Sender {
-    fn new(writer: TcpStream) -> Self {
+impl<'a> Sender<'a> {
+    pub fn new(writer: &'a mut dyn Write) -> Self {
         Self { writer }
     }
 

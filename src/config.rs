@@ -1,84 +1,55 @@
-use std::time::Duration;
+use anyhow::{Result, anyhow};
+use figment::{Figment, providers::Env};
+use serde::Deserialize;
 
-#[derive(Default)]
+#[derive(Deserialize)]
 pub struct Config {
-    pub server: ServerConfig,
-    pub user: UserConfig,
-    pub handler: HandlerConfig,
+    pub server: Server,
+    pub identity: Identity,
+    pub handler: Handler,
 }
 
-pub struct ServerConfig {
-    pub address: String,
-    pub autojoin: Vec<String>,
-    pub timeout: Duration,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            address: env("SERVER_ADDRESS"),
-            autojoin: env("SERVER_AUTOJOIN")
-                .split(',')
-                .map(str::to_string)
-                .collect(),
-            timeout: Duration::from_mins(env_or("SERVER_TIMEOUT_MINUTES", "10").parse().unwrap()),
-        }
+impl Config {
+    pub fn from_env() -> Result<Self> {
+        Figment::new()
+            .merge(Env::raw().split("_"))
+            .extract()
+            .map_err(|e| anyhow!("parse config error: {e}"))
     }
 }
 
-pub struct UserConfig {
+#[derive(Deserialize)]
+pub struct Server {
+    pub address: String,
+}
+
+#[derive(Deserialize)]
+pub struct Identity {
     pub nickname: String,
     pub username: String,
     pub realname: String,
-    pub sasl: AuthenticatorConfig,
+    pub sasl: Sasl,
 }
 
-impl Default for UserConfig {
-    fn default() -> Self {
-        Self {
-            nickname: env("USER_NICKNAME"),
-            username: env("USER_USERNAME"),
-            realname: env("USER_REALNAME"),
-            sasl: AuthenticatorConfig::default(),
-        }
-    }
-}
-
-pub struct AuthenticatorConfig {
+#[derive(Deserialize)]
+pub struct Sasl {
+    pub enabled: bool,
     pub username: String,
     pub password: String,
 }
 
-impl Default for AuthenticatorConfig {
-    fn default() -> Self {
-        Self {
-            username: env("USER_SASL_USERNAME"),
-            password: env("USER_SASL_PASSWORD"),
-        }
-    }
+#[derive(Deserialize)]
+pub struct Handler {
+    pub core: Core,
+    pub raweceek: Raweceek,
 }
 
-#[derive(Default)]
-pub struct HandlerConfig {
-    pub raweceek: RaweceekConfig,
+#[derive(Deserialize)]
+pub struct Core {
+    pub autojoin: String,
 }
 
-pub struct RaweceekConfig {
+#[derive(Deserialize)]
+pub struct Raweceek {
     pub url: String,
-}
-
-impl Default for RaweceekConfig {
-    fn default() -> Self {
-        Self {
-            url: env("HANDLER_RAWECEEK_URL"),
-        }
-    }
-}
-
-fn env(key: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| panic!("environment variable '{}' is missing", key))
-}
-
-fn env_or(key: &str, default: &str) -> String {
-    std::env::var(key).unwrap_or(default.to_owned())
 }
