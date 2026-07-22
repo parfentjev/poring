@@ -4,7 +4,7 @@ use crate::{
 };
 
 pub fn register_handlers(manager: &mut EventManager) {
-    authenticator::register_handlers(manager);
-    core::register_handlers(manager);
-    manager.register(raweceek::raweceek_handler);
+    authenticator::register(manager);
+    core::register(manager);
+    raweceek::register(manager);
 }

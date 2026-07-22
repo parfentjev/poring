@@ -8,7 +8,7 @@ use crate::client::{
 
 const VERSION: &str = env!("GIT_COMMIT_HASH");
 
-pub(super) fn register_handlers(manager: &mut EventManager) {
+pub fn register(manager: &mut EventManager) {
     manager.register(client_connected);
     manager.register(client_disconnected);
     manager.register(welcome);

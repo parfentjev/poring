@@ -48,6 +48,32 @@ impl<'client> Client<'client> {
     }
 }
 
+fn connect(config: &Config) -> Result<Connection> {
+    let tcp_stream = TcpStream::connect(&config.server.address)?;
+    tcp_stream.set_read_timeout(Some(POLL_INTERVAL))?;
+
+    let tls_config = rustls::ClientConfig::builder()
+        .with_platform_verifier()?
+        .with_no_client_auth();
+
+    let tls_server = ServerName::try_from(
+        config
+            .server
+            .address
+            .split_once(':')
+            .ok_or_else(|| anyhow!("invalid server address: {}", config.server.address))?
+            .0
+            .to_owned(),
+    )?;
+
+    let tls_conn = rustls::ClientConnection::new(Arc::new(tls_config), tls_server)?;
+    let tls_stream = StreamOwned::new(tls_conn, tcp_stream);
+
+    Ok(Connection {
+        reader: BufReader::new(tls_stream),
+    })
+}
+
 struct ClientSession<'session> {
     config: &'session Config,
     event_manager: &'session EventManager,
@@ -82,6 +108,11 @@ impl<'session> ClientSession<'session> {
             let mut line = String::new();
             match self.conn.reader.read_line(&mut line) {
                 Ok(0) => continue,
+                Ok(_) if line.ends_with("\r\n") => {
+                    line.truncate(line.len() - 2);
+                    debug!("=> {line}");
+                    self.notify_handlers(line);
+                }
                 Err(error) if is_transient_err(&error) => {
                     if self.connection_timed_out() {
                         info!("connection time out after {CONNECTION_TIMEOUT:?}");
@@ -94,31 +125,27 @@ impl<'session> ClientSession<'session> {
                     break;
                 }
                 _ => {
-                    if line.ends_with("\r\n") {
-                        line.truncate(line.len() - 2);
-                        debug!("=> {line}");
-                        self.notify_handlers(line);
-                    }
+                    // Message isn't complete, keep reading.
                 }
             }
         }
     }
 
-    fn notify_handlers(&mut self, message: String) {
-        let message = match RawMessage::try_from(message) {
-            Ok(message) => message,
+    fn notify_handlers(&mut self, line: String) {
+        let raw = match RawMessage::try_from(line) {
+            Ok(raw) => raw,
             Err(e) => {
-                warn!("failed to parse raw_message: {e}");
+                warn!("failed to parse into raw message: {e}");
                 return;
             }
         };
 
-        if message.command() == "PING" {
+        if raw.command() == "PING" {
             self.last_ping = Some(Instant::now());
         }
 
-        if let Err(e) = router::dispatch_server_event(message, self) {
-            warn!("failed to convert raw_message: {e}");
+        if let Err(e) = router::dispatch_server_event(raw, self) {
+            warn!("failed to dispatch server event: {e}");
         }
     }
 
@@ -133,32 +160,6 @@ impl EventDispatcher for ClientSession<'_> {
         let mut ctx = EventContext::new(self.config, &event, &mut sender);
         self.event_manager.dispatch(&mut ctx);
     }
-}
-
-fn connect(config: &Config) -> Result<Connection> {
-    let tcp_stream = TcpStream::connect(&config.server.address)?;
-    tcp_stream.set_read_timeout(Some(POLL_INTERVAL))?;
-
-    let tls_config = rustls::ClientConfig::builder()
-        .with_platform_verifier()?
-        .with_no_client_auth();
-
-    let tls_server = ServerName::try_from(
-        config
-            .server
-            .address
-            .split_once(':')
-            .ok_or_else(|| anyhow!("invalid server address: {}", config.server.address))?
-            .0
-            .to_owned(),
-    )?;
-
-    let tls_conn = rustls::ClientConnection::new(Arc::new(tls_config), tls_server)?;
-    let tls_stream = StreamOwned::new(tls_conn, tcp_stream);
-
-    Ok(Connection {
-        reader: BufReader::new(tls_stream),
-    })
 }
 
 fn is_transient_err(error: &io::Error) -> bool {

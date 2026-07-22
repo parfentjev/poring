@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::client::{
     event::PrivateMessage,
-    event_manager::{EventContext, EventHandlerResult},
+    event_manager::{EventContext, EventHandlerResult, EventManager},
 };
 
 #[derive(Deserialize, Debug)]
@@ -21,7 +21,11 @@ struct Countdown {
     value: String,
 }
 
-pub fn raweceek_handler(ctx: &mut EventContext<PrivateMessage>) -> EventHandlerResult {
+pub fn register(manager: &mut EventManager) {
+    manager.register(handler);
+}
+
+fn handler(ctx: &mut EventContext<PrivateMessage>) -> EventHandlerResult {
     let e = ctx.event;
     if e.text() != "!ceeks" || !e.receiver().starts_with('#') {
         return Ok(());

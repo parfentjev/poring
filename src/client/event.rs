@@ -1,14 +1,13 @@
 use std::collections::VecDeque;
 
 use anyhow::{Context, Result, anyhow};
-// Client events
 
+// Client events
 pub struct ClientConnected {}
 
 pub struct ClientDisconnected {}
 
 // Server events
-
 #[derive(Debug)]
 pub(super) struct RawMessage {
     source: String,

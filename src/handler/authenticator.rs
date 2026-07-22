@@ -8,7 +8,7 @@ use crate::{
     config::{Identity, Sasl},
 };
 
-pub(super) fn register_handlers(manager: &mut EventManager) {
+pub fn register(manager: &mut EventManager) {
     manager.register(client_connected);
     manager.register(cap);
     manager.register(authenticate);
