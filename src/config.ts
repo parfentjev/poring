@@ -1,0 +1,71 @@
+const DEFAULT_USERNAME = 'poring'
+const DEFAULT_REALNAME = 'https://codeberg.org/parfentjev/poring'
+
+export interface Config {
+  readonly client: ClientConfig
+  readonly listener: ListenerConfig
+}
+
+export interface ClientConfig {
+  readonly serverAddress: string
+  readonly serverPort: string
+}
+
+export interface ListenerConfig {
+  readonly core: ListenerCoreConfig
+  readonly sasl: ListenerSaslConfig
+}
+
+export interface ListenerCoreConfig {
+  readonly nickname: string
+  readonly username: string
+  readonly realname: string
+  readonly autojoin: string | undefined
+}
+
+export interface ListenerSaslConfig {
+  readonly enabled: boolean
+  readonly username: string | undefined
+  readonly password: string | undefined
+}
+
+export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
+  const env = createProcessEnvReader(processEnv)
+
+  return {
+    client: {
+      serverAddress: env.required('CLIENT_SERVER_ADDRESS'),
+      serverPort: env.required('CLIENT_SERVER_PORT'),
+    },
+    listener: {
+      core: {
+        nickname: env.required('LISTENER_CORE_IDENTITY_NICKNAME'),
+        username: env.optional('LISTENER_CORE_IDENTITY_USERNAME') ?? DEFAULT_USERNAME,
+        realname: env.optional('LISTENER_CORE_IDENTITY_REALNAME') ?? DEFAULT_REALNAME,
+        autojoin: env.optional('LISTENER_CORE_AUTOJOIN'),
+      },
+      sasl: {
+        enabled: env.optional('LISTENER_SASL_ENABLED') === 'true',
+        username: env.optional('LISTENER_SASL_USERNAME'),
+        password: env.optional('LISTENER_SASL_PASSWORD'),
+      },
+    },
+  }
+}
+
+function createProcessEnvReader(processEnv: NodeJS.ProcessEnv) {
+  function optional(key: string): string | undefined {
+    return processEnv[key]
+  }
+
+  function required(key: string): string {
+    const value = processEnv[key]
+    if (value === undefined) {
+      throw new Error(`environment variable ${key} is undefined`)
+    }
+
+    return value
+  }
+
+  return { optional, required }
+}
