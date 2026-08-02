@@ -6,7 +6,15 @@ import { routeEvent } from './router.js'
 import type { Logger } from 'pino'
 import { once } from 'events'
 
+const RECONNECT_DELAY_MS = 10_000
+
 export type ClientEvenetManager = EventManager<State, Events>
+
+export type ClientProps = {
+  logger: Logger
+  config: Config
+  eventManager: ClientEvenetManager
+}
 
 export class Client {
   private readonly logger: Logger
@@ -14,38 +22,49 @@ export class Client {
   private readonly eventManager: ClientEvenetManager
   private reconnect: boolean
 
-  constructor(logger: Logger, config: Config, eventManager: ClientEvenetManager) {
-    this.logger = logger.child({ component: 'client' })
-    this.config = config
-    this.eventManager = eventManager
+  constructor(props: ClientProps) {
+    this.logger = props.logger.child({ component: 'client' })
+    this.config = props.config
+    this.eventManager = props.eventManager
     this.reconnect = true
   }
 
   async run() {
     while (this.reconnect) {
-      const socket = connect({
+      const tlsSocket = connect({
         host: this.config.client.serverAddress,
         port: this.config.client.serverPort,
       })
 
       try {
-        // todo: isn't this a bit too low-level for the client?
-        // perhaps I should use some library that provides a higher level API
-        await once(socket, 'secureConnect')
-        if (socket.authorized === false) {
-          this.logger.warn({ err: socket.authorizationError }, 'failed to establish secure connection')
-          continue
-        }
+        // secureConnect means we're ready to go as far as I'm concerned
+        // https://nodejs.org/api/tls.html#event-secureconnect
+        await once(tlsSocket, 'secureConnect')
 
-        new Connection(this.logger, this.config, socket, this.eventManager)
-        await once(socket, 'close')
+        const connection = new Connection({
+          logger: this.logger,
+          config: this.config,
+          socket: tlsSocket,
+          eventManager: this.eventManager,
+        })
+
+        await connection.closed()
       } catch (error) {
-        this.logger.warn({ err: error }, 'connection lost')
+        this.logger.warn({ err: error }, 'tls socket error')
       } finally {
-        socket.destroy()
+        tlsSocket.destroy()
       }
+
+      await new Promise((resolve) => setTimeout(resolve, RECONNECT_DELAY_MS))
     }
   }
+}
+
+type ConnectionProps = {
+  logger: Logger
+  config: Config
+  socket: TLSSocket
+  eventManager: ClientEvenetManager
 }
 
 export class Connection {
@@ -55,16 +74,14 @@ export class Connection {
   private readonly eventManager: ClientEvenetManager
   private messageBuffer: string
 
-  constructor(logger: Logger, config: Config, socket: TLSSocket, eventManager: ClientEvenetManager) {
-    this.logger = logger
-    this.config = config
-    this.socket = socket
-    this.eventManager = eventManager
+  constructor(props: ConnectionProps) {
+    this.logger = props.logger
+    this.config = props.config
+    this.socket = props.socket
+    this.eventManager = props.eventManager
     this.messageBuffer = ''
 
     this.socket.on('data', this.onData.bind(this))
-    this.socket.on('end', this.onEnd.bind(this))
-
     this.emit('connected', {})
   }
 
@@ -83,8 +100,17 @@ export class Connection {
 
   send(message: string) {
     this.logger.debug(`<= ${message}`)
-    this.socket.write(message)
-    this.socket.write('\r\n')
+    this.socket.write(`${message}\r\n`, (e: unknown) => e && this.logger.warn({ err: e }, 'socket.write error'))
+  }
+
+  async closed() {
+    try {
+      await once(this.socket, 'close')
+    } catch (error: unknown) {
+      this.logger.warn({ err: error }, 'socket closed with an error')
+    } finally {
+      this.emit('disconnected', {})
+    }
   }
 
   private onData(data: Buffer) {
@@ -97,9 +123,5 @@ export class Connection {
       this.logger.debug(`=> ${message}`)
       routeEvent(this.logger, this, message)
     }
-  }
-
-  private onEnd() {
-    this.emit('disconnected', {})
   }
 }

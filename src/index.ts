@@ -10,7 +10,7 @@ async function run(logger: Logger) {
   const eventManager = new EventManager<State, Events>(logger)
   registerListeners(eventManager)
 
-  const clinet = new Client(logger, config, eventManager)
+  const clinet = new Client({ logger, config, eventManager })
   await clinet.run()
 }
 
