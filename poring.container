@@ -1,0 +1,15 @@
+[Unit]
+Description=Poring IRC bot
+After=network-online.target
+
+[Container]
+Image=localhost/poring:latest
+NoNewPrivileges=true
+EnvironmentFile=%h/poring.env
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

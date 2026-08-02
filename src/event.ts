@@ -11,6 +11,13 @@ type EventListenerList<State> = Set<EventListener<State, unknown>>
 
 type EventListenersMap<State, Events> = Map<keyof Events, EventListenerList<State>>
 
+// todo: this isn't exactly working as I expected
+//
+// - empty events are interchargable because they have no props
+// - type matching happens on the handler side, so onWelcome handler can handle 'ping' events
+// because Welcome type has no props, so Ping type technically satisfies it;
+// I need to rethink this to achieve compile-time checks
+// so that listeners can only handler their specific events and nothing else
 export class EventManager<State, Events> {
   private readonly logger: Logger
   private readonly listeners: EventListenersMap<State, Events>
@@ -37,7 +44,7 @@ export class EventManager<State, Events> {
       try {
         await listener(context)
       } catch (error: unknown) {
-        this.logger.error({ error }, 'listener error')
+        this.logger.error({ err: error }, 'listener error')
       }
     }
   }

@@ -6,7 +6,8 @@
   "author": "Aleksei Parfentjev",
   "type": "module",
   "scripts": {
-    "start": "npx tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "build": "tsc --project tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",

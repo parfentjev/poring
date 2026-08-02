@@ -17,7 +17,7 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
         break
     }
   } catch (error) {
-    logger.error({ error }, 'failed to route event')
+    logger.error({ err: error }, 'failed to route event')
   }
 }
 

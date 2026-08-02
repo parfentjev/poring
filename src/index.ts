@@ -5,21 +5,21 @@ import { loadConfig } from './config.js'
 import { EventManager } from './event.js'
 import { registerListeners } from './listeners/index.js'
 
-function run(logger: Logger) {
+async function run(logger: Logger) {
   const config = loadConfig(process.env)
   const eventManager = new EventManager<State, Events>(logger)
   registerListeners(eventManager)
 
   const clinet = new Client(logger, config, eventManager)
-  clinet.run()
+  await clinet.run()
 }
 
 const logLevel = process.env['LOG_LEVEL'] ?? 'info'
 const logger = pino({ level: logLevel })
 
 try {
-  run(logger)
+  await run(logger)
 } catch (error) {
-  logger.error({ error }, 'unhandled error stopped the program')
+  logger.error({ err: error }, 'unhandled error stopped the program')
   process.exit(1)
 }

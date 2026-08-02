@@ -4,6 +4,7 @@ import type { EventManager, EventContext } from '../event.js'
 import type { Events, State } from './events.js'
 import { routeEvent } from './router.js'
 import type { Logger } from 'pino'
+import { once } from 'events'
 
 export type ClientEvenetManager = EventManager<State, Events>
 
@@ -20,13 +21,30 @@ export class Client {
     this.reconnect = true
   }
 
-  run(): Connection {
-    const socket = connect({
-      host: this.config.client.serverAddress,
-      port: this.config.client.serverPort,
-    })
+  async run() {
+    while (this.reconnect) {
+      const socket = connect({
+        host: this.config.client.serverAddress,
+        port: this.config.client.serverPort,
+      })
 
-    return new Connection(this.logger, this.config, socket, this.eventManager)
+      try {
+        // todo: isn't this a bit too low-level for the client?
+        // perhaps I should use some library that provides a higher level API
+        await once(socket, 'secureConnect')
+        if (socket.authorized === false) {
+          this.logger.warn({ err: socket.authorizationError }, 'failed to establish secure connection')
+          continue
+        }
+
+        new Connection(this.logger, this.config, socket, this.eventManager)
+        await once(socket, 'close')
+      } catch (error) {
+        this.logger.warn({ err: error }, 'connection lost')
+      } finally {
+        socket.destroy()
+      }
+    }
   }
 }
 
