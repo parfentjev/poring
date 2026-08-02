@@ -1,5 +1,13 @@
 import type { Logger } from 'pino'
-import { constructPing, constructPrivateMessage, constructWelcome, type Events } from './events.js'
+import {
+  constructAuthenticate,
+  constructCap,
+  constructPing,
+  constructPrivateMessage,
+  constructSaslSuccess,
+  constructWelcome,
+  type Events,
+} from './events.js'
 import type { Connection } from './index.js'
 import { parseRawMessage, type RawMessage } from './message.js'
 
@@ -14,6 +22,15 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
         break
       case 'PING':
         constructAndEmit(connection, raw, 'ping', constructPing)
+        break
+      case 'CAP':
+        constructAndEmit(connection, raw, 'cap', constructCap)
+        break
+      case 'AUTHENTICATE':
+        constructAndEmit(connection, raw, 'authenticate', constructAuthenticate)
+        break
+      case '903':
+        constructAndEmit(connection, raw, 'saslSuccess', constructSaslSuccess)
         break
       case '001':
         constructAndEmit(connection, raw, 'welcome', constructWelcome)

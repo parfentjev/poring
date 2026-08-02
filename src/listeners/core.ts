@@ -3,18 +3,14 @@ import type { ClientEvenetManager } from '../client/index.js'
 import type { EventContext } from '../event.js'
 
 export function registerCoreListeners(eventManager: ClientEvenetManager) {
-  eventManager.on('connected', onConnect)
+  eventManager.on('connected', onConnected)
   eventManager.on('welcome', onWelcome)
   eventManager.on('ping', onPing)
-  eventManager.on('disconnected', onDisconnect)
+  eventManager.on('disconnected', onDisconnected)
 }
 
-async function onConnect(ctx: EventContext<State, Connected>) {
+async function onConnected(ctx: EventContext<State, Connected>) {
   ctx.state.logger.info('connected to the server')
-
-  const config = ctx.state.config.core
-  ctx.state.send(`NICK ${config.nickname}`)
-  ctx.state.send(`USER ${config.username} 0 * :${config.realname}`)
 }
 
 async function onWelcome(ctx: EventContext<State, Welcome>) {
@@ -25,6 +21,6 @@ async function onPing(ctx: EventContext<State, Ping>) {
   ctx.state.send(`PONG :${ctx.event.token}`)
 }
 
-async function onDisconnect(ctx: EventContext<State, Disconnected>) {
+async function onDisconnected(ctx: EventContext<State, Disconnected>) {
   ctx.state.logger.info('disconnected from the server')
 }

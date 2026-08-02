@@ -14,6 +14,9 @@ export type Events = {
   disconnected: Disconnected
   privateMessage: PrivateMessage
   // Server events
+  cap: Cap
+  authenticate: Authenticate
+  saslSuccess: SaslSuccess
   welcome: Welcome
   ping: Ping
 }
@@ -24,6 +27,39 @@ export type Connected = {}
 export type Disconnected = {}
 
 // Server events
+export type Cap = {
+  target: string
+  subcommand: string
+  capablities: string
+}
+
+export function constructCap(raw: RawMessage): Cap {
+  assertCommandEquals(raw, 'CAP')
+
+  return { target: getParam(raw, 0), subcommand: getParam(raw, 1), capablities: getText(raw) }
+}
+
+export type Authenticate = {
+  data: string
+}
+
+export function constructAuthenticate(raw: RawMessage): Authenticate {
+  assertCommandEquals(raw, 'AUTHENTICATE')
+
+  return { data: getParam(raw, 0) }
+}
+
+export type SaslSuccess = {
+  target: string
+  text: string
+}
+
+export function constructSaslSuccess(raw: RawMessage): SaslSuccess {
+  assertCommandEquals(raw, '903')
+
+  return { target: getParam(raw, 0), text: getText(raw) }
+}
+
 export type Welcome = {}
 
 export function constructWelcome(_: RawMessage): Welcome {
