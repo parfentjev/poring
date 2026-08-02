@@ -1,3 +1,5 @@
+import type { Logger } from 'pino'
+
 export type EventContext<State, Event> = {
   state: State
   event: Event
@@ -7,10 +9,14 @@ type EventListener<State, Event> = (context: EventContext<State, Event>) => Prom
 
 type EventListenerList<State> = Set<EventListener<State, unknown>>
 
-export class EventManager<State, Events> {
-  private readonly listeners: Map<keyof Events, EventListenerList<State>>
+type EventListenersMap<State, Events> = Map<keyof Events, EventListenerList<State>>
 
-  constructor() {
+export class EventManager<State, Events> {
+  private readonly logger: Logger
+  private readonly listeners: EventListenersMap<State, Events>
+
+  constructor(logger: Logger) {
+    this.logger = logger.child({ component: 'event-manager' })
     this.listeners = new Map()
   }
 
@@ -31,7 +37,7 @@ export class EventManager<State, Events> {
       try {
         await listener(context)
       } catch (error: unknown) {
-        console.error('listener error', error)
+        this.logger.error({ error }, 'listener error')
       }
     }
   }

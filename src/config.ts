@@ -8,7 +8,7 @@ export interface Config {
 
 export interface ClientConfig {
   readonly serverAddress: string
-  readonly serverPort: string
+  readonly serverPort: number
 }
 
 export interface ListenerConfig {
@@ -35,7 +35,7 @@ export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
   return {
     client: {
       serverAddress: env.required('CLIENT_SERVER_ADDRESS'),
-      serverPort: env.required('CLIENT_SERVER_PORT'),
+      serverPort: +env.required('CLIENT_SERVER_PORT'),
     },
     listener: {
       core: {

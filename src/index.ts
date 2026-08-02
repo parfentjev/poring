@@ -1,14 +1,25 @@
-import { type State, type Events, type Ping } from './client/event.js'
+import { pino, type Logger } from 'pino'
+import { type State, type Events } from './client/events.js'
+import { Client } from './client/index.js'
 import { loadConfig } from './config.js'
-import { EventManager, type EventContext } from './event.js'
+import { EventManager } from './event.js'
+import { registerListeners } from './listeners/index.js'
 
-const config = loadConfig(process.env)
+function run(logger: Logger) {
+  const config = loadConfig(process.env)
+  const eventManager = new EventManager<State, Events>(logger)
+  registerListeners(eventManager)
 
-const eventManager = new EventManager<State, Events>()
+  const clinet = new Client(logger, config, eventManager)
+  clinet.run()
+}
 
-eventManager.on('ping', async (context: EventContext<State, Ping>) => {
-  const token = context.event.token
-  console.log(`got ping: ${token}`)
-})
+const logLevel = process.env['LOG_LEVEL'] ?? 'info'
+const logger = pino({ level: logLevel })
 
-await eventManager.emit('ping', { state: { config: config.listener }, event: { token: 'my cat is cute' } })
+try {
+  run(logger)
+} catch (error) {
+  logger.error({ error }, 'unhandled error stopped the program')
+  process.exit(1)
+}
