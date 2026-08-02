@@ -99,6 +99,10 @@ export class Connection {
   }
 
   send(message: string) {
+    if (message.includes('\r') || message.includes('\n')) {
+      return
+    }
+
     this.logger.debug(`<= ${message}`)
     this.socket.write(`${message}\r\n`, (e: unknown) => e && this.logger.warn({ err: e }, 'socket.write error'))
   }

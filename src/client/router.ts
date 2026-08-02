@@ -1,5 +1,5 @@
 import type { Logger } from 'pino'
-import { constructPing, constructWelcome, type Events } from './events.js'
+import { constructPing, constructPrivateMessage, constructWelcome, type Events } from './events.js'
 import type { Connection } from './index.js'
 import { parseRawMessage, type RawMessage } from './message.js'
 
@@ -9,6 +9,9 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
   try {
     const raw = parseRawMessage(message)
     switch (raw.command) {
+      case 'PRIVMSG':
+        constructAndEmit(connection, raw, 'privateMessage', constructPrivateMessage)
+        break
       case 'PING':
         constructAndEmit(connection, raw, 'ping', constructPing)
         break

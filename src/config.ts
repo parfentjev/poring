@@ -1,32 +1,37 @@
 const DEFAULT_USERNAME = 'poring'
 const DEFAULT_REALNAME = 'https://codeberg.org/parfentjev/poring'
 
-export interface Config {
+export type Config = {
   readonly client: ClientConfig
   readonly listener: ListenerConfig
 }
 
-export interface ClientConfig {
+export type ClientConfig = {
   readonly serverAddress: string
   readonly serverPort: number
 }
 
-export interface ListenerConfig {
+export type ListenerConfig = {
   readonly core: ListenerCoreConfig
   readonly sasl: ListenerSaslConfig
+  readonly raweceek: ListenerRaweceekConfig
 }
 
-export interface ListenerCoreConfig {
+export type ListenerCoreConfig = {
   readonly nickname: string
   readonly username: string
   readonly realname: string
   readonly autojoin: string | undefined
 }
 
-export interface ListenerSaslConfig {
+export type ListenerSaslConfig = {
   readonly enabled: boolean
   readonly username: string | undefined
   readonly password: string | undefined
+}
+
+export type ListenerRaweceekConfig = {
+  readonly serviceUrl: string
 }
 
 export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
@@ -48,6 +53,9 @@ export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
         enabled: env.optional('LISTENER_SASL_ENABLED') === 'true',
         username: env.optional('LISTENER_SASL_USERNAME'),
         password: env.optional('LISTENER_SASL_PASSWORD'),
+      },
+      raweceek: {
+        serviceUrl: env.optional('LISTENER_RAWECEEK_SERVICE_URL') ?? 'https://raweceek.eu',
       },
     },
   }

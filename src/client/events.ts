@@ -12,6 +12,7 @@ export type Events = {
   // Client events
   connected: Connected
   disconnected: Disconnected
+  privateMessage: PrivateMessage
   // Server events
   welcome: Welcome
   ping: Ping
@@ -25,26 +26,59 @@ export type Disconnected = {}
 // Server events
 export type Welcome = {}
 
-export type Ping = {
-  readonly token: string
-}
-
 export function constructWelcome(_: RawMessage): Welcome {
   return {}
 }
 
+export type Ping = {
+  readonly token: string
+}
+
 export function constructPing(raw: RawMessage): Ping {
-  requireCommand(raw, 'PING')
+  assertCommandEquals(raw, 'PING')
 
   return { token: getText(raw) }
 }
 
-function requireCommand(raw: RawMessage, command: string) {
+export type PrivateMessage = {
+  readonly sender: string
+  readonly receiver: string
+  readonly text: string
+}
+
+export function constructPrivateMessage(raw: RawMessage): PrivateMessage {
+  assertCommandEquals(raw, 'PRIVMSG')
+
+  return { sender: getPrefix(raw), receiver: getParam(raw, 0), text: getText(raw) }
+}
+
+function assertCommandEquals(raw: RawMessage, command: string) {
   if (raw.command === command) {
     return
   }
 
   throw new Error(`expected ${command} command in: ${raw.source}`)
+}
+
+function getPrefix(raw: RawMessage): string {
+  if (raw.prefix === undefined) {
+    throw new Error(`missing prefix in: ${raw.source}`)
+  }
+
+  return raw.prefix
+}
+
+function getParam(raw: RawMessage, i: number): string {
+  if (raw.params.length + 1 < i) {
+    throw new Error(`missing ${i}th param in: ${raw.source}`)
+  }
+
+  const param = raw.params[i]
+  if (param === undefined) {
+    throw new Error(`undefined ${i}th param in: ${raw.source}`)
+  }
+
+  return param
 }
 
 function getText(raw: RawMessage): string {
