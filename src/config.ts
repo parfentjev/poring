@@ -39,9 +39,9 @@ export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
     },
     listener: {
       core: {
-        nickname: env.required('LISTENER_CORE_IDENTITY_NICKNAME'),
-        username: env.optional('LISTENER_CORE_IDENTITY_USERNAME') ?? DEFAULT_USERNAME,
-        realname: env.optional('LISTENER_CORE_IDENTITY_REALNAME') ?? DEFAULT_REALNAME,
+        nickname: env.required('LISTENER_CORE_NICKNAME'),
+        username: env.optional('LISTENER_CORE_USERNAME') ?? DEFAULT_USERNAME,
+        realname: env.optional('LISTENER_CORE_REALNAME') ?? DEFAULT_REALNAME,
         autojoin: env.optional('LISTENER_CORE_AUTOJOIN'),
       },
       sasl: {
