@@ -1,6 +1,7 @@
 import type { Logger } from 'pino'
 import type { ListenerConfig } from '../config.js'
 import type { RawMessage } from './message.js'
+import type { TypeEventMap } from '../event.js'
 
 export type State = {
   logger: Logger
@@ -8,75 +9,79 @@ export type State = {
   send: (message: string) => void
 }
 
-export type Events = {
-  // Client events
-  connected: Connected
-  disconnected: Disconnected
-  privateMessage: PrivateMessage
-  // Server events
-  cap: Cap
-  authenticate: Authenticate
-  saslSuccess: SaslSuccess
-  welcome: Welcome
-  ping: Ping
-}
+export type Events = TypeEventMap<
+  Connected | Disconnected | PrivateMessage | Cap | Authenticate | SaslSuccess | Welcome | Ping
+>
 
 // Client events
-export type Connected = {}
+export type Connected = {
+  readonly type: 'connected'
+}
 
-export type Disconnected = {}
+export type Disconnected = {
+  readonly type: 'disconnected'
+}
 
 // Server events
 export type Cap = {
-  target: string
-  subcommand: string
-  capablities: string
+  readonly type: 'cap'
+  readonly target: string
+  readonly subcommand: string
+  readonly capablities: string
 }
 
 export function constructCap(raw: RawMessage): Cap {
   assertCommandEquals(raw, 'CAP')
 
-  return { target: getParam(raw, 0), subcommand: getParam(raw, 1), capablities: getText(raw) }
+  return { type: 'cap', target: getParam(raw, 0), subcommand: getParam(raw, 1), capablities: getText(raw) }
 }
 
 export type Authenticate = {
-  data: string
+  readonly type: 'authenticate'
+  readonly data: string
 }
 
 export function constructAuthenticate(raw: RawMessage): Authenticate {
   assertCommandEquals(raw, 'AUTHENTICATE')
 
-  return { data: getParam(raw, 0) }
+  return { type: 'authenticate', data: getParam(raw, 0) }
 }
 
 export type SaslSuccess = {
-  target: string
-  text: string
+  readonly type: 'saslSuccess'
+  readonly target: string
+  readonly text: string
 }
 
 export function constructSaslSuccess(raw: RawMessage): SaslSuccess {
   assertCommandEquals(raw, '903')
 
-  return { target: getParam(raw, 0), text: getText(raw) }
+  return { type: 'saslSuccess', target: getParam(raw, 0), text: getText(raw) }
 }
 
-export type Welcome = {}
+export type Welcome = {
+  readonly type: 'welcome'
+}
 
-export function constructWelcome(_: RawMessage): Welcome {
-  return {}
+export function constructWelcome(raw: RawMessage): Welcome {
+  assertCommandEquals(raw, '001')
+
+  return { type: 'welcome' }
 }
 
 export type Ping = {
+  readonly type: 'ping'
   readonly token: string
 }
 
 export function constructPing(raw: RawMessage): Ping {
   assertCommandEquals(raw, 'PING')
 
-  return { token: getText(raw) }
+  return { type: 'ping', token: getText(raw) }
 }
 
 export type PrivateMessage = {
+  readonly type: 'privateMessage'
   readonly sender: string
   readonly receiver: string
   readonly text: string
@@ -85,7 +90,7 @@ export type PrivateMessage = {
 export function constructPrivateMessage(raw: RawMessage): PrivateMessage {
   assertCommandEquals(raw, 'PRIVMSG')
 
-  return { sender: getPrefix(raw), receiver: getParam(raw, 0), text: getText(raw) }
+  return { type: 'privateMessage', sender: getPrefix(raw), receiver: getParam(raw, 0), text: getText(raw) }
 }
 
 function assertCommandEquals(raw: RawMessage, command: string) {

@@ -82,11 +82,11 @@ export class Connection {
     this.messageBuffer = ''
 
     this.socket.on('data', this.onData.bind(this))
-    this.emit('connected', {})
+    this.emit({ type: 'connected' })
   }
 
-  emit<Event extends keyof Events>(eventType: Event, event: Events[Event]) {
-    const context: EventContext<State, Events[Event]> = {
+  emit<Event extends keyof Events>(event: Events[Event]) {
+    const ctx: EventContext<State, Events[Event]> = {
       state: {
         logger: this.logger.child({ component: 'event-listener' }),
         config: this.config.listener,
@@ -95,7 +95,7 @@ export class Connection {
       event: event,
     }
 
-    this.eventManager.emit(eventType, context)
+    this.eventManager.emit(ctx)
   }
 
   send(message: string) {
@@ -113,7 +113,7 @@ export class Connection {
     } catch (error: unknown) {
       this.logger.warn({ err: error }, 'socket closed with an error')
     } finally {
-      this.emit('disconnected', {})
+      this.emit({ type: 'disconnected' })
     }
   }
 

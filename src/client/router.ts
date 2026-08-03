@@ -18,22 +18,22 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
     const raw = parseRawMessage(message)
     switch (raw.command) {
       case 'PRIVMSG':
-        constructAndEmit(connection, raw, 'privateMessage', constructPrivateMessage)
+        constructAndEmit(connection, raw, constructPrivateMessage)
         break
       case 'PING':
-        constructAndEmit(connection, raw, 'ping', constructPing)
+        constructAndEmit(connection, raw, constructPing)
         break
       case 'CAP':
-        constructAndEmit(connection, raw, 'cap', constructCap)
+        constructAndEmit(connection, raw, constructCap)
         break
       case 'AUTHENTICATE':
-        constructAndEmit(connection, raw, 'authenticate', constructAuthenticate)
+        constructAndEmit(connection, raw, constructAuthenticate)
         break
       case '903':
-        constructAndEmit(connection, raw, 'saslSuccess', constructSaslSuccess)
+        constructAndEmit(connection, raw, constructSaslSuccess)
         break
       case '001':
-        constructAndEmit(connection, raw, 'welcome', constructWelcome)
+        constructAndEmit(connection, raw, constructWelcome)
         break
     }
   } catch (error) {
@@ -44,9 +44,7 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
 function constructAndEmit<Event extends keyof Events>(
   connection: Connection,
   raw: RawMessage,
-  eventType: Event,
   constructor: EventConstructor<Event>
 ) {
-  const event = constructor(raw)
-  connection.emit(eventType, event)
+  connection.emit(constructor(raw))
 }

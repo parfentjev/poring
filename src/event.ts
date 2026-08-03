@@ -1,24 +1,23 @@
 import type { Logger } from 'pino'
 
-export type EventContext<State, Event> = {
+type TypedEvent = { type: PropertyKey }
+
+export type TypeEventMap<T extends TypedEvent> = {
+  [Event in T as Event['type']]: Event
+}
+
+export type EventContext<State, Event extends TypedEvent> = {
   state: State
   event: Event
 }
 
-type EventListener<State, Event> = (context: EventContext<State, Event>) => Promise<void>
+type EventListener<State, Event extends TypedEvent> = (ctx: EventContext<State, Event>) => Promise<void>
 
-type EventListenerList<State> = Set<EventListener<State, unknown>>
+type EventListenerList<State> = Set<EventListener<State, TypedEvent>>
 
 type EventListenersMap<State, Events> = Map<keyof Events, EventListenerList<State>>
 
-// todo: this isn't exactly working as I expected
-//
-// - empty events are interchargable because they have no props
-// - type matching happens on the handler side, so onWelcome handler can handle 'ping' events
-// because Welcome type has no props, so Ping type technically satisfies it;
-// I need to rethink this to achieve compile-time checks
-// so that listeners can only handler their specific events and nothing else
-export class EventManager<State, Events> {
+export class EventManager<State, Events extends TypeEventMap<TypedEvent>> {
   private readonly logger: Logger
   private readonly listeners: EventListenersMap<State, Events>
 
@@ -29,20 +28,20 @@ export class EventManager<State, Events> {
 
   on<Event extends keyof Events>(eventType: Event, listener: EventListener<State, Events[Event]>) {
     let eventTypeListeners = this.listeners.get(eventType) ?? new Set()
-    eventTypeListeners.add(listener as EventListener<State, unknown>)
+    eventTypeListeners.add(listener as EventListener<State, TypedEvent>)
 
     this.listeners.set(eventType, eventTypeListeners)
   }
 
-  async emit<Event extends keyof Events>(eventType: Event, context: EventContext<State, Events[Event]>) {
-    const listeners = this.listeners.get(eventType)
+  async emit<Event extends keyof Events>(ctx: EventContext<State, Events[Event]>) {
+    const listeners = this.listeners.get(ctx.event.type)
     if (listeners === undefined) {
       return
     }
 
     for (const listener of listeners) {
       try {
-        await listener(context)
+        await listener(ctx)
       } catch (error: unknown) {
         this.logger.error({ err: error }, 'listener error')
       }
