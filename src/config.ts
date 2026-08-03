@@ -1,5 +1,5 @@
 const DEFAULT_USERNAME = 'poring'
-const DEFAULT_REALNAME = 'https://codeberg.org/parfentjev/poring'
+const DEFAULT_REALNAME = 'https://github.com/parfentjev/poring'
 
 export type Config = {
   readonly client: ClientConfig
