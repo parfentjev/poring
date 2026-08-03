@@ -11,7 +11,7 @@ jobs:
       packages: write
     env:
       REGISTRY: ghcr.io
-      IMAGE_TAG: ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.ref_name }}
+      IMAGE_TAG: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
