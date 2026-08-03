@@ -3,7 +3,7 @@ Description=Poring IRC bot
 After=network-online.target
 
 [Container]
-Image=localhost/poring:latest
+Image=ghcr.io/parfentjev/poring:latest
 NoNewPrivileges=true
 EnvironmentFile=%h/poring.env
 
