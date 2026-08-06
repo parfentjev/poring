@@ -1,4 +1,4 @@
-import type { Connected, Disconnected, Ping, State, Welcome } from '../client/events.js'
+import type { Connected, Disconnected, Ping, PrivateMessage, State, Welcome } from '../client/events.js'
 import type { ClientEvenetManager } from '../client/index.js'
 import type { EventContext } from '../event.js'
 
@@ -6,6 +6,7 @@ export function registerCoreListeners(eventManager: ClientEvenetManager) {
   eventManager.on('connected', onConnected)
   eventManager.on('welcome', onWelcome)
   eventManager.on('ping', onPing)
+  eventManager.on('privateMessage', onVersion)
   eventManager.on('disconnected', onDisconnected)
 }
 
@@ -19,6 +20,14 @@ async function onWelcome(ctx: EventContext<State, Welcome>) {
 
 async function onPing(ctx: EventContext<State, Ping>) {
   ctx.state.send(`PONG :${ctx.event.token}`)
+}
+
+async function onVersion(ctx: EventContext<State, PrivateMessage>) {
+  if (ctx.event.text === '\x01VERSION\x01') {
+    const sender = ctx.event.sender.nickname
+    const hash = ctx.state.metadata.gitCommitHash
+    ctx.state.send(`NOTICE ${sender} :\x01VERSION ${hash}\x01`)
+  }
 }
 
 async function onDisconnected(ctx: EventContext<State, Disconnected>) {
