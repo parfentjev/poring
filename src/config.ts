@@ -32,6 +32,7 @@ export type ListenerSaslConfig = {
 
 export type ListenerRaweceekConfig = {
   readonly serviceUrl: string
+  readonly listenOn: string[]
 }
 
 export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
@@ -56,6 +57,7 @@ export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
       },
       raweceek: {
         serviceUrl: env.optional('LISTENER_RAWECEEK_SERVICE_URL') ?? 'https://raweceek.eu',
+        listenOn: env.optional('LISTENER_RAWECEEK_LISTEN_ON')?.split(',') ?? [],
       },
     },
   }

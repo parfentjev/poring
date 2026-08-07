@@ -6,9 +6,12 @@ WORKDIR /build-stage
 COPY package*.json ./
 RUN npm ci
 
+ARG GIT_COMMIT_HASH
+
 COPY tsconfig.json ./
 COPY ./src ./src
-RUN npm run build
+COPY ./scripts ./scripts
+RUN GIT_COMMIT_HASH="$GIT_COMMIT_HASH" npm run build
 
 FROM alpine:latest
 WORKDIR /usr/src/app

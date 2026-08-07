@@ -36,8 +36,8 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
         constructAndEmit(connection, raw, constructWelcome)
         break
     }
-  } catch (error) {
-    logger.error({ err: error }, 'failed to route event')
+  } catch (err) {
+    logger.error({ err }, 'failed to route event')
   }
 }
 

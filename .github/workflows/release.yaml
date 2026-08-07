@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,11 +15,11 @@ jobs:
       REGISTRY: ghcr.io
       IMAGE_TAG: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
     steps:
-      - name: Checkout repository
+      - name: Check out repository
         uses: actions/checkout@v7
       - name: Set up podman
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
       - name: Build image
-        run: podman build -t ${{ env.IMAGE_TAG }} .
+        run: podman build --build-arg GIT_COMMIT_HASH=${{ github.sha }} -t ${{ env.IMAGE_TAG }} .
       - name: Publish image
         run: podman push ${{ env.IMAGE_TAG }}

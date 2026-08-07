@@ -5,6 +5,7 @@ import type { Events, State } from './events.js'
 import { routeEvent } from './router.js'
 import type { Logger } from 'pino'
 import { once } from 'events'
+import type { Metadata } from '../metadata.js'
 
 const RECONNECT_DELAY_MS = 10_000
 
@@ -12,18 +13,21 @@ export type ClientEvenetManager = EventManager<State, Events>
 
 export type ClientProps = {
   logger: Logger
+  metadata: Metadata
   config: Config
   eventManager: ClientEvenetManager
 }
 
 export class Client {
   private readonly logger: Logger
+  private readonly metadata: Metadata
   private readonly config: Config
   private readonly eventManager: ClientEvenetManager
   private reconnect: boolean
 
   constructor(props: ClientProps) {
     this.logger = props.logger.child({ component: 'client' })
+    this.metadata = props.metadata
     this.config = props.config
     this.eventManager = props.eventManager
     this.reconnect = true
@@ -43,14 +47,15 @@ export class Client {
 
         const connection = new Connection({
           logger: this.logger,
+          metadata: this.metadata,
           config: this.config,
           socket: tlsSocket,
           eventManager: this.eventManager,
         })
 
         await connection.closed()
-      } catch (error) {
-        this.logger.warn({ err: error }, 'tls socket error')
+      } catch (err) {
+        this.logger.warn({ err }, 'tls socket error')
       } finally {
         tlsSocket.destroy()
       }
@@ -62,6 +67,7 @@ export class Client {
 
 type ConnectionProps = {
   logger: Logger
+  metadata: Metadata
   config: Config
   socket: TLSSocket
   eventManager: ClientEvenetManager
@@ -69,6 +75,7 @@ type ConnectionProps = {
 
 export class Connection {
   private readonly logger: Logger
+  private readonly metadata: Metadata
   private readonly config: Config
   private readonly socket: TLSSocket
   private readonly eventManager: ClientEvenetManager
@@ -76,6 +83,7 @@ export class Connection {
 
   constructor(props: ConnectionProps) {
     this.logger = props.logger
+    this.metadata = props.metadata
     this.config = props.config
     this.socket = props.socket
     this.eventManager = props.eventManager
@@ -89,6 +97,7 @@ export class Connection {
     const ctx: EventContext<State, Events[Event]> = {
       state: {
         logger: this.logger.child({ component: 'event-listener' }),
+        metadata: this.metadata,
         config: this.config.listener,
         send: this.send.bind(this),
       },

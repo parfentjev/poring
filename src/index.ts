@@ -4,13 +4,15 @@ import { Client } from './client/index.js'
 import { loadConfig } from './config.js'
 import { EventManager } from './event.js'
 import { registerListeners } from './listeners/index.js'
+import { loadMetadata } from './metadata.js'
 
 async function run(logger: Logger) {
+  const metadata = loadMetadata(logger, './metadata.json')
   const config = loadConfig(process.env)
   const eventManager = new EventManager<State, Events>(logger)
   registerListeners(eventManager)
 
-  const clinet = new Client({ logger, config, eventManager })
+  const clinet = new Client({ logger, metadata, config, eventManager })
   await clinet.run()
 }
 
@@ -19,7 +21,7 @@ const logger = pino({ level: logLevel })
 
 try {
   await run(logger)
-} catch (error) {
-  logger.error({ err: error }, 'unhandled error stopped the program')
+} catch (err) {
+  logger.error({ err }, 'unhandled error stopped the program')
   process.exit(1)
 }

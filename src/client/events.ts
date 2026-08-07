@@ -2,9 +2,11 @@ import type { Logger } from 'pino'
 import type { ListenerConfig } from '../config.js'
 import type { RawMessage } from './message.js'
 import type { TypeEventMap } from '../event.js'
+import type { Metadata } from '../metadata.js'
 
 export type State = {
   logger: Logger
+  metadata: Metadata
   config: ListenerConfig
   send: (message: string) => void
 }
@@ -82,7 +84,10 @@ export function constructPing(raw: RawMessage): Ping {
 
 export type PrivateMessage = {
   readonly type: 'privateMessage'
-  readonly sender: string
+  readonly sender: {
+    raw: string
+    nickname: string
+  }
   readonly receiver: string
   readonly text: string
 }
@@ -90,7 +95,21 @@ export type PrivateMessage = {
 export function constructPrivateMessage(raw: RawMessage): PrivateMessage {
   assertCommandEquals(raw, 'PRIVMSG')
 
-  return { type: 'privateMessage', sender: getPrefix(raw), receiver: getParam(raw, 0), text: getText(raw) }
+  const senderPrefix = getPrefix(raw).substring(1)
+  const senderNickname = senderPrefix.split('!')[0]
+  if (senderNickname === undefined) {
+    throw new Error(`malformed prefix: ${senderPrefix}`)
+  }
+
+  return {
+    type: 'privateMessage',
+    sender: {
+      raw: senderPrefix,
+      nickname: senderNickname,
+    },
+    receiver: getParam(raw, 0),
+    text: getText(raw),
+  }
 }
 
 function assertCommandEquals(raw: RawMessage, command: string) {

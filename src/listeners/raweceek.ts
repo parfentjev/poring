@@ -22,8 +22,9 @@ async function onMessage(ctx: EventContext<State, PrivateMessage>) {
     return
   }
 
-  if (ctx.event.receiver.startsWith('#')) {
-    await handle(ctx.state.config.raweceek, ctx.state.send, ctx.event.receiver)
+  const config = ctx.state.config.raweceek
+  if (config.listenOn.includes(ctx.event.receiver)) {
+    await handle(config, ctx.state.send, ctx.event.receiver)
   }
 }
 
