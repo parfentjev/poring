@@ -1,5 +1,6 @@
 const DEFAULT_USERNAME = 'poring'
 const DEFAULT_REALNAME = 'https://github.com/parfentjev/poring'
+const DEFAULT_QUIT_MESSAGE = 'https://github.com/parfentjev/poring'
 
 export type Config = {
   readonly client: ClientConfig
@@ -9,6 +10,7 @@ export type Config = {
 export type ClientConfig = {
   readonly serverAddress: string
   readonly serverPort: number
+  readonly quitMessage: string
 }
 
 export type ListenerConfig = {
@@ -42,6 +44,7 @@ export function loadConfig(processEnv: NodeJS.ProcessEnv): Config {
     client: {
       serverAddress: env.required('CLIENT_SERVER_ADDRESS'),
       serverPort: +env.required('CLIENT_SERVER_PORT'),
+      quitMessage: env.optional('CLIENT_QUIT_MESSAGE') ?? DEFAULT_QUIT_MESSAGE,
     },
     listener: {
       core: {
