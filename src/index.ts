@@ -20,7 +20,7 @@ async function run(logger: Logger) {
 }
 
 const logLevel = process.env['LOG_LEVEL'] ?? 'info'
-const logger = pino({ level: logLevel })
+const logger = pino({ level: logLevel, timestamp: pino.stdTimeFunctions.isoTime })
 
 try {
   await run(logger)
