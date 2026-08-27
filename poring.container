@@ -4,8 +4,11 @@ After=network-online.target
 
 [Container]
 Image=ghcr.io/parfentjev/poring:latest
-NoNewPrivileges=true
 EnvironmentFile=%h/poring.env
+
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=all
 
 [Service]
 Restart=always
