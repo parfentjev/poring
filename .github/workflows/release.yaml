@@ -20,6 +20,6 @@ jobs:
       - name: Set up podman
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
       - name: Build image
-        run: podman build -t "$IMAGE_TAG" .
+        run: podman build --build-arg GIT_COMMIT_HASH=${{ github.sha }} -t "$IMAGE_TAG" .
       - name: Publish image
         run: podman push "$IMAGE_TAG"
