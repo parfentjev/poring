@@ -8,7 +8,6 @@ import { once } from 'events'
 import type { Metadata } from '../metadata.js'
 import { setTimeout } from 'timers/promises'
 import { Poker } from './poker.js'
-import { log } from 'console'
 
 const RECONNECT_DELAY_MS = 10_000
 
