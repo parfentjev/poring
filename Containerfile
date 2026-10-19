@@ -16,7 +16,7 @@ RUN GIT_COMMIT_HASH="$GIT_COMMIT_HASH" npm run build
 FROM alpine:latest
 WORKDIR /usr/src/app
 
-RUN apk add --no-cache libstdc++ dumb-init \
+RUN apk add --no-cache libstdc++ dumb-init libatomic \
   && addgroup -g 1000 node && adduser -u 1000 -G node -s /bin/sh -D node \
   && chown node:node ./
 
