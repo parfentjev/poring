@@ -8,11 +8,13 @@ export type State = {
   logger: Logger
   metadata: Metadata
   config: ListenerConfig
-  send: (message: string) => void
+  send: SendFn
 }
 
+export type SendFn = (message: string) => void
+
 export type Events = TypeEventMap<
-  Connected | Disconnected | PrivateMessage | Cap | Authenticate | SaslSuccess | Welcome | Ping
+  Connected | Disconnected | PrivateMessage | Cap | Authenticate | SaslSuccess | Welcome | Ping | Pong
 >
 
 // Client events
@@ -80,6 +82,17 @@ export function constructPing(raw: RawMessage): Ping {
   assertCommandEquals(raw, 'PING')
 
   return { type: 'ping', token: getText(raw) }
+}
+
+export type Pong = {
+  readonly type: 'pong'
+  readonly token: string
+}
+
+export function constructPong(raw: RawMessage): Pong {
+  assertCommandEquals(raw, 'PONG')
+
+  return { type: 'pong', token: getText(raw) }
 }
 
 export type PrivateMessage = {

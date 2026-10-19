@@ -7,6 +7,7 @@ import type { Logger } from 'pino'
 import { once } from 'events'
 import type { Metadata } from '../metadata.js'
 import { setTimeout } from 'timers/promises'
+import { Poker } from './poker.js'
 
 const RECONNECT_DELAY_MS = 10_000
 
@@ -28,12 +29,18 @@ export class Client {
   }
 
   async run() {
-    const { logger, config, signal } = this.props
+    const { logger, config, signal, eventManager } = this.props
 
+    const poker = new Poker(eventManager)
     while (signal.aborted === false) {
       const tlsSocket = connect({
         host: config.client.serverAddress,
         port: config.client.serverPort,
+      })
+
+      poker.onTimeout(() => {
+        logger.warn('server did not respond to PING, disconnecting')
+        tlsSocket.destroy()
       })
 
       try {
