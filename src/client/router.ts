@@ -3,6 +3,7 @@ import {
   constructAuthenticate,
   constructCap,
   constructPing,
+  constructPong,
   constructPrivateMessage,
   constructSaslSuccess,
   constructWelcome,
@@ -22,6 +23,9 @@ export function routeEvent(logger: Logger, connection: Connection, message: stri
         break
       case 'PING':
         constructAndEmit(connection, raw, constructPing)
+        break
+      case 'PONG':
+        constructAndEmit(connection, raw, constructPong)
         break
       case 'CAP':
         constructAndEmit(connection, raw, constructCap)
